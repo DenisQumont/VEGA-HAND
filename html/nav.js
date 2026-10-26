@@ -294,10 +294,11 @@
 
   function phoneFailText(error) {
     var name = error && error.name || "";
+    var message = error && error.message || "";
     if (name === "NetworkError" || name === "NotSupportedError" || name === "NotFoundError") {
       return "Телефон не смог подключиться. Если появится запрос PIN, введите PIN протеза. Заводской PIN — 123456, если его не меняли.";
     }
-    return (error && error.message) || "Не удалось подключиться к протезу";
+    return message || name || "Не удалось подключиться к протезу";
   }
 
   function onPhoneDrop() {
@@ -320,13 +321,21 @@
       device.ongattserverdisconnected = onPhoneDrop;
       return server.getPrimaryService(PHONE_SERVICE);
     }).then(function (service) {
-      return Promise.all([
-        service.getCharacteristic(PHONE_OUTPUT),
-        service.getCharacteristic(PHONE_INPUT),
-        service.getCharacteristic(PHONE_MYO_READ).catch(function () { return null; }),
-        service.getCharacteristic(PHONE_MYO_WRITE).catch(function () { return null; }),
-        service.getCharacteristic(PHONE_SERIAL).catch(function () { return null; })
-      ]);
+      function takeChar(uuid) {
+        return gattCall(function () { return service.getCharacteristic(uuid); }).catch(function () { return null; });
+      }
+      return takeChar(PHONE_OUTPUT).then(function (output) {
+        if (!output) throw new Error("Протез не отдал канал телеметрии");
+        return takeChar(PHONE_INPUT).then(function (input) {
+          return takeChar(PHONE_MYO_READ).then(function (myoRead) {
+            return takeChar(PHONE_MYO_WRITE).then(function (myoWrite) {
+              return takeChar(PHONE_SERIAL).then(function (serial) {
+                return [output, input, myoRead, myoWrite, serial];
+              });
+            });
+          });
+        });
+      });
     }).then(function (chars) {
       phoneInput = chars[1];
       phoneMyoRead = chars[2];
@@ -340,24 +349,15 @@
         onBleEvent(message);
       });
       return chars[0].startNotifications().then(function () {
-        return chars[4] ? chars[4].readValue().catch(function () { return null; }) : null;
-      });
-    }).then(function (serial) {
-      onBleEvent({
-        event: "status",
-        bridge: "phone",
-        connected: true,
-        reason: reason || "hello",
-        name: device.name || "",
-        mode: phoneTelemetry ? phoneTelemetry.mode : ""
-      });
-      if (serial) {
-        var bytes = new Uint8Array(serial.buffer, serial.byteOffset, serial.byteLength);
-        var text = new TextDecoder("utf-8").decode(bytes).replace(/\0[\s\S]*/, "").trim();
-        if (text) onBleEvent({ event: "info", bridge: "phone", serial: text });
-      }
-      return Promise.all([readPhoneDis(), readPhoneBattery()]).then(function () {
-        if (phoneMyoRead) return readPhoneMyo().catch(function () {});
+        onBleEvent({
+          event: "status",
+          bridge: "phone",
+          connected: true,
+          reason: reason || "hello",
+          name: device.name || "",
+          mode: phoneTelemetry ? phoneTelemetry.mode : ""
+        });
+        loadPhoneProfile(chars[4]);
       });
     }).then(function () {
       phoneJob = null;
@@ -368,43 +368,69 @@
     return phoneJob;
   }
 
-  function readPhoneText(char) {
-    return char.readValue().then(function (view) {
-      var bytes = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
-      return new TextDecoder("utf-8").decode(bytes).replace(/\0[\s\S]*/, "").trim();
-    });
+  function gattCall(fn) {
+    try {
+      return Promise.resolve().then(fn);
+    } catch (error) {
+      return Promise.reject(error);
+    }
   }
 
-  function readPhoneDis() {
-    if (!phoneServer) return Promise.resolve();
-    return phoneServer.getPrimaryService("0000180a-0000-1000-8000-00805f9b34fb").then(function (service) {
-      var fields = [
-        ["00002a29-0000-1000-8000-00805f9b34fb", "manufacturer"],
-        ["00002a27-0000-1000-8000-00805f9b34fb", "hardware"],
-        ["00002a28-0000-1000-8000-00805f9b34fb", "software"],
-        ["00002a26-0000-1000-8000-00805f9b34fb", "firmware"]
-      ];
-      return Promise.all(fields.map(function (pair) {
-        return service.getCharacteristic(pair[0]).then(function (char) {
-          return readPhoneText(char);
-        }).then(function (text) {
+  function decodeBleText(view) {
+    if (!view) return "";
+    try {
+      var bytes = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
+      return new TextDecoder("utf-8").decode(bytes).replace(/\0[\s\S]*/, "").trim();
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function loadPhoneProfile(serialChar) {
+    var fields = [
+      ["00002a29-0000-1000-8000-00805f9b34fb", "manufacturer"],
+      ["00002a27-0000-1000-8000-00805f9b34fb", "hardware"],
+      ["00002a28-0000-1000-8000-00805f9b34fb", "software"],
+      ["00002a26-0000-1000-8000-00805f9b34fb", "firmware"]
+    ];
+    function stillUp() {
+      return !!(phoneServer && phoneServer.connected);
+    }
+    var chain = phoneWait(600).catch(function () {});
+    if (serialChar) {
+      chain = chain.then(function () {
+        if (!stillUp()) return;
+        return gattCall(function () { return serialChar.readValue(); }).then(function (view) {
+          var text = decodeBleText(view);
+          if (text) onBleEvent({ event: "info", bridge: "phone", serial: text });
+        });
+      }).catch(function () {});
+    }
+    fields.forEach(function (pair) {
+      chain = chain.then(function () {
+        if (!stillUp()) return;
+        return gattCall(function () { return phoneServer.getPrimaryService("0000180a-0000-1000-8000-00805f9b34fb"); }).then(function (service) {
+          return service.getCharacteristic(pair[0]);
+        }).then(function (char) {
+          return char.readValue();
+        }).then(function (view) {
+          var text = decodeBleText(view);
           if (!text) return;
           var message = { event: "info", bridge: "phone" };
           message[pair[1]] = text;
           onBleEvent(message);
-        }).catch(function () {});
-      }));
-    }).catch(function () {});
-  }
-
-  function readPhoneBattery() {
-    if (!phoneServer) return Promise.resolve();
-    return phoneServer.getPrimaryService("0000180f-0000-1000-8000-00805f9b34fb").then(function (service) {
-      return service.getCharacteristic("00002a19-0000-1000-8000-00805f9b34fb");
-    }).then(function (char) {
-      return char.readValue();
-    }).then(function (view) {
-      if (view) onBleEvent({ event: "info", bridge: "phone", battery: view.getUint8(0) });
+        });
+      }).catch(function () {});
+    });
+    chain.then(function () {
+      if (!stillUp()) return;
+      return gattCall(function () { return phoneServer.getPrimaryService("0000180f-0000-1000-8000-00805f9b34fb"); }).then(function (service) {
+        return service.getCharacteristic("00002a19-0000-1000-8000-00805f9b34fb");
+      }).then(function (char) {
+        return char.readValue();
+      }).then(function (view) {
+        if (view) onBleEvent({ event: "info", bridge: "phone", battery: view.getUint8(0) });
+      });
     }).catch(function () {});
   }
 
