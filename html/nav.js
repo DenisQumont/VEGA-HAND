@@ -1,4 +1,9 @@
 (function () {
+  if (window.top !== window) {
+    window.top.location.replace(window.location.href);
+    return;
+  }
+
   var ROUTES = {
     "Главная": "ProfileHandShacke.html",
     "Контакты": "Contact.html",
@@ -447,18 +452,31 @@
   function openDevicePicker() {
     pendingMode = "";
     editingSensor = "";
-    if (!navigator.bluetooth || !navigator.bluetooth.requestDevice) {
-      toast("Системный список Bluetooth открывается в Chrome на телефоне");
+    if (window.top !== window) {
+      window.top.location.replace(window.location.href);
       return;
     }
-    navigator.bluetooth.requestDevice({
-      filters: [{ namePrefix: "VEGA" }, { services: [PHONE_SERVICE] }],
-      optionalServices: [
-        PHONE_SERVICE,
-        "0000180f-0000-1000-8000-00805f9b34fb",
-        "0000180a-0000-1000-8000-00805f9b34fb"
-      ]
-    }).then(function (device) {
+    if (!navigator.bluetooth || !navigator.bluetooth.requestDevice) {
+      toast("На iPhone откройте эту страницу в Bluefy. В остальных телефонах нужен Chrome.", 12000);
+      return;
+    }
+    var services = [
+      PHONE_SERVICE,
+      "0000180f-0000-1000-8000-00805f9b34fb",
+      "0000180a-0000-1000-8000-00805f9b34fb"
+    ];
+    var iphone = /iPhone|iPad|Bluefy/i.test(navigator.userAgent || "");
+    var options = iphone
+      ? { acceptAllDevices: true, optionalServices: services }
+      : { filters: [{ namePrefix: "VEGA" }], optionalServices: services };
+    var request;
+    try {
+      request = navigator.bluetooth.requestDevice(options);
+    } catch (error) {
+      toast(phoneFailText(error), 12000);
+      return;
+    }
+    request.then(function (device) {
       try {
         localStorage.setItem("vega-device-id", device.id);
         localStorage.setItem("vega-device-name", device.name || "VEGA");
@@ -468,7 +486,7 @@
       toast("Подключение к " + (device.name || "протезу") + "…", 0);
       go("ProfileHandShacke.html");
     }).catch(function (error) {
-      if (!error || error.name === "NotFoundError" || error.name === "NotAllowedError") return;
+      if (error && (error.name === "NotFoundError" || error.name === "AbortError")) return;
       toast(phoneFailText(error), 12000);
     });
   }

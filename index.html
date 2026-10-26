@@ -4,136 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>VEGA ToolHand</title>
-  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#375a76">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      background: #fefefe;
-      overflow: hidden;
-    }
-    iframe {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      border: 0;
-      background: #fefefe;
-      display: block;
-    }
-  </style>
 </head>
 <body>
-  <iframe id="screen" title="VEGA ToolHand"></iframe>
   <script>
-    var frame = document.getElementById("screen");
-    var socket = null;
-    var pending = [];
-    var lastStatus = { event: "status", bridge: false, connected: false, reason: "hello" };
-    var booted = false;
-    var userNav = false;
-
-    function phoneSession() {
-      try { return localStorage.getItem("vega-ble") === "phone"; }
-      catch (e) { return false; }
-    }
-
-    function remember(connected) {
-      if (phoneSession()) return;
-      try {
-        if (connected) localStorage.setItem("vega-prosthesis", "1");
-        else localStorage.removeItem("vega-prosthesis");
-      } catch (e) {}
-    }
-
-    function reveal(file) {
-      if (file) frame.src = file;
-      frame.style.visibility = "visible";
-    }
-
-    function boot(status) {
-      if (booted) return;
-      booted = true;
-      if (phoneSession()) {
-        reveal("html/ProfileHandShacke.html");
-        return;
+    var home = "html/AddProfile.html";
+    try {
+      if (localStorage.getItem("vega-prosthesis") === "1" || localStorage.getItem("vega-ble") === "phone") {
+        home = "html/ProfileHandShacke.html";
       }
-      remember(!!status.connected);
-      reveal(status.connected ? "html/ProfileHandShacke.html" : "html/AddProfile.html");
-    }
-
-    function postChild(payload) {
-      if (!frame.contentWindow) return;
-      frame.contentWindow.postMessage({ type: "vega-ble-event", payload: payload }, "*");
-    }
-
-    function sendBridge(payload) {
-      if (!socket || socket.readyState !== 1) {
-        pending.push(payload);
-        return;
-      }
-      socket.send(JSON.stringify(payload));
-    }
-
-    function openBridge() {
-      var url = (location.protocol === "https:" ? "wss://" : "ws://") + location.hostname + ":8092";
-      socket = new WebSocket(url);
-      socket.addEventListener("open", function () {
-        lastStatus.bridge = true;
-        pending.splice(0).forEach(function (payload) { socket.send(JSON.stringify(payload)); });
-      });
-      socket.addEventListener("message", function (event) {
-        var payload = JSON.parse(event.data);
-        if (payload.event === "status") {
-          lastStatus = payload;
-          if (phoneSession()) {
-            if (!booted) boot(payload);
-            return;
-          }
-          remember(!!payload.connected);
-          if (!booted) boot(payload);
-          else if (payload.connected && !userNav && String(frame.src).indexOf("AddProfile.html") !== -1) frame.src = "html/ProfileHandShacke.html";
-          else if (!payload.connected && String(frame.src).indexOf("ProfileHandShacke.html") !== -1) frame.src = "html/AddProfile.html";
-        }
-        if (phoneSession()) return;
-        postChild(payload);
-      });
-      socket.addEventListener("close", function () {
-        lastStatus = { event: "status", bridge: false, connected: false, reason: "disconnect" };
-        if (!phoneSession()) {
-          remember(false);
-          boot(lastStatus);
-          postChild(lastStatus);
-        } else if (!booted) boot(lastStatus);
-        window.setTimeout(openBridge, 1500);
-      });
-      socket.addEventListener("error", function () {
-        socket.close();
-      });
-    }
-
-    frame.style.visibility = "hidden";
-    window.setTimeout(function () { boot(lastStatus); }, 1200);
-    openBridge();
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(function () {});
-
-    window.addEventListener("message", function (event) {
-      if (!event.data) return;
-      if (event.data.type === "vega-nav" && event.data.file) {
-        userNav = true;
-        frame.src = "html/" + event.data.file;
-        return;
-      }
-      if (event.data.type !== "vega-ble" || !event.data.payload) return;
-      if (event.data.payload.cmd === "hello") {
-        postChild(lastStatus);
-        return;
-      }
-      sendBridge(event.data.payload);
-    });
+    } catch (e) {}
+    location.replace(home);
   </script>
 </body>
 </html>
