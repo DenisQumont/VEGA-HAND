@@ -20,7 +20,10 @@
     catch (e) { return false; }
   }
 
+  var leaving = false;
+
   function go(file) {
+    leaving = true;
     if (file === "ProfileHandShacke.html" && !prosthesisConnected()) file = "AddProfile.html";
     if (window.parent !== window) {
       window.parent.postMessage({ type: "vega-nav", file: file }, "*");
@@ -34,7 +37,16 @@
   var pendingMode = "";
   var editingSensor = "";
 
+  function phoneLink() {
+    try { return localStorage.getItem("vega-ble") === "phone"; }
+    catch (e) { return false; }
+  }
+
   function bleRequest(payload) {
+    if (phoneLink() || payload && payload.cmd === "phone") {
+      handlePhone(payload);
+      return;
+    }
     if (window.parent !== window) {
       window.parent.postMessage({ type: "vega-ble", payload: payload }, "*");
       return;
@@ -145,15 +157,269 @@
     });
   }
 
+  var PHONE_SERVICE = "55865178-6434-3234-1251-136459739abb";
+  var PHONE_OUTPUT = "55865178-6434-3234-1251-13645973aa01";
+  var PHONE_INPUT = "55865178-6434-3234-1251-13645973aa02";
+  var PHONE_MYO_READ = "55865178-6434-3234-1251-13645973aa03";
+  var PHONE_MYO_WRITE = "55865178-6434-3234-1251-13645973aa04";
+  var PHONE_SERIAL = "55865178-6434-3234-1251-13645973aa07";
+  var PHONE_GRIPS = ["Раскрытая ладонь", "Нейтральный схват", "Силовой схват", "Кулачный схват", "Схват удержания чашки", "Удерживающий схват", "Цилиндрический схват", "Плоская ладонь", "Схват для нажатия", "Указательный жест", "Схват удержания карты", "Трехпалый щепоть", "Двухпалый щепоть", "Боковой схват", "Закрытый схват", "Пользовательский схват №1", "Пользовательский схват №2"];
+  var PHONE_MYO_KEYS = ["dir_treshold", "TrigPercentTreshold", "TriggerBlocks", "TrigTresholdHigh", "TrigTresholdLow", "DifTriggerPlus", "DifTriggerMinus", "TrigDelayMax", "DifTrDelayMinus", "DifMovePlus", "DifMoveMinus", "MoveTresholdHigh", "MoveBlocks", "dead_Zone_Myo1", "dead_Zone_Myo2"];
+  var phoneServer = null;
+  var phoneInput = null;
+  var phoneMyoRead = null;
+  var phoneMyoWrite = null;
+  var phoneTelemetry = null;
+  var phoneJob = null;
+
+  function phoneErrorText(code) {
+    var names = { 1: "Нет связи с контроллером протеза", 2: "Нет связи BLE", 6: "Неисправность аккумулятора", 7: "Неисправность миодатчика 1", 8: "Неисправность миодатчика 2", 84: "Неисправны оба миодатчика" };
+    if (!code) return "";
+    return names[code] || ("Код ошибки " + code);
+  }
+
+  function unpackPhone(view) {
+    if (!view || view.byteLength !== 62) return null;
+    var grip = view.getUint8(1);
+    var error = view.getUint8(2);
+    var secure = view.getUint8(61);
+    return {
+      state: view.getUint8(0),
+      grip: grip,
+      gripName: PHONE_GRIPS[grip] || ("Схват " + grip),
+      error: error,
+      errorText: phoneErrorText(error),
+      myoMode: view.getInt8(3),
+      trigger: view.getUint8(4),
+      custom1Speed: [0, 1, 2, 3, 4, 5].map(function (i) { return view.getInt8(11 + i); }),
+      custom1Pos: [0, 1, 2, 3, 4, 5].map(function (i) { return view.getInt8(17 + i); }),
+      custom2Speed: [0, 1, 2, 3, 4, 5].map(function (i) { return view.getInt8(23 + i); }),
+      custom2Pos: [0, 1, 2, 3, 4, 5].map(function (i) { return view.getInt8(29 + i); }),
+      myo1: view.getUint16(35, true),
+      myo2: view.getUint16(37, true),
+      k1: Math.round(view.getFloat32(53, true) * 10) / 10,
+      k2: Math.round(view.getFloat32(57, true) * 10) / 10,
+      connectionMode: secure,
+      mode: secure ? "user" : "service",
+      lowBattery: view.getUint8(0) === 0x28
+    };
+  }
+
+  function packPhoneInput(state, source, k1, k2) {
+    source = source || {};
+    var view = new DataView(new ArrayBuffer(41));
+    var coefficient1 = Math.round(Number(k1 == null ? (source.k1 == null ? 1 : source.k1) : k1) * 10) / 10;
+    var coefficient2 = Math.round(Number(k2 == null ? (source.k2 == null ? 1 : source.k2) : k2) * 10) / 10;
+    if (coefficient1 < 0 || coefficient1 > 1 || coefficient2 < 0 || coefficient2 > 1) throw new Error("Коэффициент миодатчика должен быть от 0.0 до 1.0");
+    view.setUint8(0, state & 255);
+    view.setUint8(1, (source.grip || 0) & 255);
+    view.setInt8(2, source.myoMode || 0);
+    var lists = [source.custom1Speed, source.custom1Pos, source.custom2Speed, source.custom2Pos];
+    var offset = 9;
+    lists.forEach(function (list) {
+      for (var i = 0; i < 6; i++) view.setInt8(offset + i, list && list[i] ? list[i] : 0);
+      offset += 6;
+    });
+    view.setFloat32(33, coefficient1, true);
+    view.setFloat32(37, coefficient2, true);
+    return view.buffer;
+  }
+
+  function packPhoneMyo(values) {
+    var defaults = { dir_treshold: 105, TrigPercentTreshold: 2, TriggerBlocks: 50, TrigTresholdHigh: 945, TrigTresholdLow: 819, DifTriggerPlus: 50, DifTriggerMinus: 6, TrigDelayMax: 945, DifTrDelayMinus: 1, DifMovePlus: 3, DifMoveMinus: 2, MoveTresholdHigh: 315, MoveBlocks: 20, dead_Zone_Myo1: 250, dead_Zone_Myo2: 250 };
+    var view = new DataView(new ArrayBuffer(30));
+    PHONE_MYO_KEYS.forEach(function (key, index) {
+      var number = parseInt(values && values[key] != null ? values[key] : defaults[key], 10);
+      if (isNaN(number) || number < 0 || number > 65535) throw new Error("Значение вне диапазона 0...65535");
+      view.setUint16(index * 2, number, true);
+    });
+    return view.buffer;
+  }
+
+  function onPhoneDrop() {
+    if (leaving) return;
+    phoneServer = null;
+    phoneInput = null;
+    try {
+      localStorage.removeItem("vega-prosthesis");
+      localStorage.removeItem("vega-ble");
+      localStorage.removeItem("vega-device-id");
+    } catch (e) {}
+    onBleEvent({ event: "status", bridge: "phone", connected: false, reason: "disconnect" });
+  }
+
+  function connectPhone(device, reason) {
+    if (phoneJob) return phoneJob;
+    phoneJob = device.gatt.connect().then(function (server) {
+      phoneServer = server;
+      device.addEventListener("gattserverdisconnected", onPhoneDrop);
+      return server.getPrimaryService(PHONE_SERVICE);
+    }).then(function (service) {
+      return Promise.all([
+        service.getCharacteristic(PHONE_OUTPUT),
+        service.getCharacteristic(PHONE_INPUT),
+        service.getCharacteristic(PHONE_MYO_READ).catch(function () { return null; }),
+        service.getCharacteristic(PHONE_MYO_WRITE).catch(function () { return null; }),
+        service.getCharacteristic(PHONE_SERIAL).catch(function () { return null; })
+      ]);
+    }).then(function (chars) {
+      phoneInput = chars[1];
+      phoneMyoRead = chars[2];
+      phoneMyoWrite = chars[3];
+      chars[0].addEventListener("characteristicvaluechanged", function (event) {
+        var packet = unpackPhone(event.target.value);
+        if (!packet) return;
+        phoneTelemetry = packet;
+        var message = { event: "telemetry", bridge: "phone" };
+        Object.keys(packet).forEach(function (key) { message[key] = packet[key]; });
+        onBleEvent(message);
+      });
+      return chars[0].startNotifications().then(function () {
+        return chars[4] ? chars[4].readValue().catch(function () { return null; }) : null;
+      });
+    }).then(function (serial) {
+      onBleEvent({
+        event: "status",
+        bridge: "phone",
+        connected: true,
+        reason: reason || "hello",
+        name: device.name || "",
+        mode: phoneTelemetry ? phoneTelemetry.mode : ""
+      });
+      if (serial) {
+        var bytes = new Uint8Array(serial.buffer, serial.byteOffset, serial.byteLength);
+        var text = new TextDecoder("utf-8").decode(bytes).replace(/\0[\s\S]*/, "").trim();
+        onBleEvent({ event: "info", bridge: "phone", serial: text });
+      }
+      if (phoneMyoRead) return readPhoneMyo();
+    }).then(function () {
+      phoneJob = null;
+    }, function (error) {
+      phoneJob = null;
+      throw error;
+    });
+    return phoneJob;
+  }
+
+  function resumePhone() {
+    if (!navigator.bluetooth || !navigator.bluetooth.getDevices) return;
+    if (phoneServer && phoneServer.connected) return;
+    var id = "";
+    try { id = localStorage.getItem("vega-device-id") || ""; } catch (e) {}
+    navigator.bluetooth.getDevices().then(function (devices) {
+      var device = null;
+      for (var i = 0; i < devices.length; i++) {
+        if (!id || devices[i].id === id) { device = devices[i]; break; }
+      }
+      if (!device) {
+        try {
+          localStorage.removeItem("vega-prosthesis");
+          localStorage.removeItem("vega-ble");
+          localStorage.removeItem("vega-device-id");
+        } catch (e) {}
+        if (/ProfileHandShacke\.html$/.test(location.pathname)) go("AddProfile.html");
+        return null;
+      }
+      return connectPhone(device, "hello");
+    }).catch(function (error) {
+      toast(error && error.message ? error.message : "Не удалось восстановить связь с протезом");
+    });
+  }
+
+  function writePhone(char, data) {
+    if (!char) return Promise.reject(new Error("Протез не подключён"));
+    if (char.writeValueWithoutResponse) return char.writeValueWithoutResponse(data);
+    return char.writeValue(data);
+  }
+
+  function readPhoneMyo() {
+    if (!phoneMyoRead) {
+      onBleEvent({ event: "error", message: "Протез не отдал тонкие настройки миодатчиков" });
+      return Promise.resolve();
+    }
+    return phoneMyoRead.readValue().then(function (view) {
+      if (view.byteLength !== 30) throw new Error("Настройки миодатчиков должны быть 30 байт");
+      var values = {};
+      PHONE_MYO_KEYS.forEach(function (key, index) { values[key] = view.getUint16(index * 2, true); });
+      onBleEvent({ event: "myo", values: values });
+    });
+  }
+
+  function handlePhone(payload) {
+    var command = payload && payload.cmd;
+    if (command === "hello" || command === "phone") {
+      resumePhone();
+      return;
+    }
+    if (!phoneServer || !phoneServer.connected) {
+      toast("Протез не подключён");
+      return;
+    }
+    var job = Promise.resolve();
+    if (command === "mode") {
+      var code = payload.mode === "service" ? 0x21 : 0x22;
+      job = writePhone(phoneInput, packPhoneInput(code, phoneTelemetry)).then(function () {
+        onBleEvent({ event: "mode", message: "Команда отправлена. Протез перезагрузит BLE, связь может прерваться." });
+      });
+    } else if (command === "read_myo") {
+      job = readPhoneMyo();
+    } else if (command === "write_myo") {
+      job = writePhone(phoneInput, packPhoneInput(0x31, phoneTelemetry)).then(function () {
+        return writePhone(phoneMyoWrite, packPhoneMyo(payload.values));
+      }).then(function () {
+        onBleEvent({ event: "myo", written: true });
+      });
+    } else if (command === "set_k") {
+      var k1 = payload.k1;
+      var k2 = payload.k2;
+      if (phoneTelemetry) {
+        if (k1 == null) k1 = phoneTelemetry.k1;
+        if (k2 == null) k2 = phoneTelemetry.k2;
+      }
+      if (Number(payload.sensor) === 1) k1 = payload.value;
+      if (Number(payload.sensor) === 2) k2 = payload.value;
+      job = writePhone(phoneInput, packPhoneInput(0x24, phoneTelemetry, k1, k2)).then(function () {
+        onBleEvent({ event: "k", k1: k1, k2: k2 });
+      });
+    }
+    job.catch(function (error) {
+      onBleEvent({ event: "error", message: error && error.message ? error.message : "Ошибка BLE" });
+    });
+  }
+
   function openDevicePicker() {
     pendingMode = "";
     editingSensor = "";
-    var dialog = ensureDevicePicker();
-    var note = dialog.querySelector("[data-vega-device-note]");
-    note.textContent = "Поиск протезов…";
-    dialog.querySelector("[data-vega-device-list]").innerHTML = "";
-    pinOverlay(dialog, "4.5rem");
-    bleRequest({ cmd: "scan" });
+    if (!navigator.bluetooth || !navigator.bluetooth.requestDevice) {
+      toast("Системный список Bluetooth открывается в Chrome на телефоне");
+      return;
+    }
+    navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: "VEGA" }, { services: [PHONE_SERVICE] }],
+      optionalServices: [
+        PHONE_SERVICE,
+        "0000180f-0000-1000-8000-00805f9b34fb",
+        "0000180a-0000-1000-8000-00805f9b34fb"
+      ]
+    }).then(function (device) {
+      try {
+        localStorage.setItem("vega-device-id", device.id);
+        localStorage.setItem("vega-device-name", device.name || "VEGA");
+        localStorage.setItem("vega-ble", "phone");
+        localStorage.setItem("vega-prosthesis", "1");
+      } catch (e) {}
+      return connectPhone(device, "connect").catch(function (error) {
+        try {
+          localStorage.removeItem("vega-prosthesis");
+          localStorage.removeItem("vega-ble");
+          localStorage.removeItem("vega-device-id");
+        } catch (e) {}
+        throw error;
+      });
+    }).catch(function (error) {
+      if (!error || error.name === "NotFoundError" || error.name === "NotAllowedError") return;
+      toast(error.message || "Не удалось подключиться к протезу");
+    });
   }
 
   function confirmMode(mode) {
@@ -175,6 +441,7 @@
   function onBleEvent(payload) {
     if (!payload || !payload.event) return;
     if (payload.event === "status") {
+      if (payload.bridge !== "phone" && phoneLink()) return;
       bleState.connected = !!payload.connected;
       bleState.bridge = !!payload.bridge;
       if (payload.mode) bleState.mode = payload.mode;

@@ -36,7 +36,13 @@
     var booted = false;
     var userNav = false;
 
+    function phoneSession() {
+      try { return localStorage.getItem("vega-ble") === "phone"; }
+      catch (e) { return false; }
+    }
+
     function remember(connected) {
+      if (phoneSession()) return;
       try {
         if (connected) localStorage.setItem("vega-prosthesis", "1");
         else localStorage.removeItem("vega-prosthesis");
@@ -51,6 +57,10 @@
     function boot(status) {
       if (booted) return;
       booted = true;
+      if (phoneSession()) {
+        reveal("html/ProfileHandShacke.html");
+        return;
+      }
       remember(!!status.connected);
       reveal(status.connected ? "html/ProfileHandShacke.html" : "html/AddProfile.html");
     }
@@ -79,18 +89,25 @@
         var payload = JSON.parse(event.data);
         if (payload.event === "status") {
           lastStatus = payload;
+          if (phoneSession()) {
+            if (!booted) boot(payload);
+            return;
+          }
           remember(!!payload.connected);
           if (!booted) boot(payload);
           else if (payload.connected && !userNav && String(frame.src).indexOf("AddProfile.html") !== -1) frame.src = "html/ProfileHandShacke.html";
           else if (!payload.connected && String(frame.src).indexOf("ProfileHandShacke.html") !== -1) frame.src = "html/AddProfile.html";
         }
+        if (phoneSession()) return;
         postChild(payload);
       });
       socket.addEventListener("close", function () {
         lastStatus = { event: "status", bridge: false, connected: false, reason: "disconnect" };
-        remember(false);
-        boot(lastStatus);
-        postChild(lastStatus);
+        if (!phoneSession()) {
+          remember(false);
+          boot(lastStatus);
+          postChild(lastStatus);
+        } else if (!booted) boot(lastStatus);
         window.setTimeout(openBridge, 1500);
       });
       socket.addEventListener("error", function () {
