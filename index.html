@@ -11,13 +11,7 @@
 </head>
 <body>
   <script>
-    var home = "html/AddProfile.html";
-    try {
-      if (localStorage.getItem("vega-prosthesis") === "1" || localStorage.getItem("vega-ble") === "phone") {
-        home = "html/ProfileHandShacke.html";
-      }
-    } catch (e) {}
-    location.replace(home);
+    location.replace("html/AddProfile.html");
   </script>
 </body>
 </html>

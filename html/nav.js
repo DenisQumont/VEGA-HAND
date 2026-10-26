@@ -21,8 +21,16 @@
   }
 
   function prosthesisConnected() {
-    try { return localStorage.getItem("vega-prosthesis") === "1"; }
-    catch (e) { return false; }
+    return !!(phoneServer && phoneServer.connected) || !!bleState.connected;
+  }
+
+  function forgetPhone() {
+    try {
+      localStorage.removeItem("vega-prosthesis");
+      localStorage.removeItem("vega-ble");
+      localStorage.removeItem("vega-device-id");
+      localStorage.removeItem("vega-device-name");
+    } catch (e) {}
   }
 
   var leaving = false;
@@ -362,9 +370,14 @@
   function resumePhone() {
     if (phoneServer && phoneServer.connected) {
       paintLink();
+      if (/AddProfile\.html$/.test(location.pathname)) go("ProfileHandShacke.html");
       return;
     }
-    if (!navigator.bluetooth || !navigator.bluetooth.getDevices) return;
+    if (!navigator.bluetooth || !navigator.bluetooth.getDevices) {
+      forgetPhone();
+      if (/ProfileHandShacke\.html$/.test(location.pathname)) go("AddProfile.html");
+      return;
+    }
     if (resumeLock) return;
     var name = "протезу";
     try { name = localStorage.getItem("vega-device-name") || name; } catch (e) {}
@@ -374,13 +387,11 @@
       return connectWithRetry(device, 4);
     }).then(function () {
       hideToast();
+      if (/AddProfile\.html$/.test(location.pathname)) go("ProfileHandShacke.html");
     }, function (error) {
       var text = phoneFailText(error);
-      try {
-        sessionStorage.setItem("vega-ble-error", text);
-        localStorage.removeItem("vega-prosthesis");
-        localStorage.removeItem("vega-ble");
-      } catch (e) {}
+      try { sessionStorage.setItem("vega-ble-error", text); } catch (e) {}
+      forgetPhone();
       if (/ProfileHandShacke\.html$/.test(location.pathname)) go("AddProfile.html");
       else toast(text, 12000);
     });
@@ -476,19 +487,20 @@
       return;
     }
     request.then(function (device) {
-      try {
-        localStorage.setItem("vega-device-id", device.id);
-        localStorage.setItem("vega-device-name", device.name || "VEGA");
-        localStorage.setItem("vega-ble", "phone");
-        localStorage.setItem("vega-prosthesis", "1");
-      } catch (e) {}
       toast("Подключение к " + (device.name || "протезу") + "…", 0);
       return connectPhone(device, "hello").then(function () {
+        try {
+          localStorage.setItem("vega-device-id", device.id);
+          localStorage.setItem("vega-device-name", device.name || "VEGA");
+          localStorage.setItem("vega-ble", "phone");
+          localStorage.setItem("vega-prosthesis", "1");
+        } catch (e) {}
         hideToast();
         go("ProfileHandShacke.html");
       });
     }).catch(function (error) {
       if (error && (error.name === "NotFoundError" || error.name === "AbortError")) return;
+      forgetPhone();
       toast(phoneFailText(error), 12000);
     });
   }
