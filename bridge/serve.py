@@ -20,7 +20,6 @@ from vega_protocol import (
     DIS_FIRMWARE_UUID,
     DIS_HARDWARE_UUID,
     DIS_MANUFACTURER_UUID,
-    DIS_SERIAL_UUID,
     DIS_SOFTWARE_UUID,
     INPUT_UUID,
     MANUAL_MYO_MODE,
@@ -177,7 +176,7 @@ class Bridge:
     async def _read_info(self):
         info = {
             "event": "info",
-            "serial": decode_text(await self._read_char(SERIAL_UUID) or await self._read_char(DIS_SERIAL_UUID)),
+            "serial": decode_text(await self._read_char(SERIAL_UUID)),
             "firmware": decode_text(await self._read_char(DIS_FIRMWARE_UUID)),
             "hardware": decode_text(await self._read_char(DIS_HARDWARE_UUID)),
             "software": decode_text(await self._read_char(DIS_SOFTWARE_UUID)),

@@ -108,41 +108,66 @@
     el.style.display = "none";
   }
 
+  function paintText(id, value) {
+    var node = document.getElementById(id);
+    if (!node || value == null || value === "") return;
+    node.textContent = value;
+  }
+
+  function paintStatusDot(id, color) {
+    var dot = document.getElementById(id);
+    if (!dot) return;
+    dot.style.backgroundImage = "none";
+    dot.style.backgroundColor = color;
+    dot.style.borderRadius = "50%";
+  }
+
+  function linkStatus() {
+    if (!bleState.connected) return { text: "Нет связи", color: "rgb(180,180,180)" };
+    if (bleState.prosthesisState === 0) return { text: "Заблокирован", color: "rgb(214,40,40)" };
+    return { text: "Подключено", color: "rgb(13,199,54)" };
+  }
+
   function paintLink() {
-    var line = document.getElementById("34_481");
-    if (line) {
-      if (!bleState.connected) line.textContent = "Нет связи";
-      else line.textContent = bleState.mode === "service" ? "Сервис" : "Подключен";
+    var status = linkStatus();
+    paintText("34_173_0", status.text);
+    paintText("34_481", status.text);
+    paintText("34_452", status.text);
+    paintStatusDot("34_174", status.color);
+    paintStatusDot("34_482", status.color);
+    if (bleState.deviceName) {
+      paintText("34_170", bleState.deviceName);
+      paintText("34_483", bleState.deviceName);
     }
-    var battery = document.getElementById("34_478");
-    if (battery && bleState.battery != null) battery.textContent = bleState.battery + "%";
-    var grip = document.getElementById("34_230_0_1");
-    if (grip && bleState.gripName) grip.textContent = "Активный схват: " + bleState.gripName;
-    var dot = document.getElementById("34_815");
-    if (dot) {
-      dot.style.backgroundImage = "none";
-      dot.style.backgroundColor = bleState.trigger ? "rgb(55,90,118)" : "rgb(180,180,180)";
-      dot.style.borderRadius = "50%";
+    if (bleState.battery != null) {
+      paintText("34_478", bleState.battery + "%");
+      paintText("34_171", bleState.battery + "%");
     }
-    [
-      ["Производитель", bleState.manufacturer],
-      ["Серийный номер", bleState.serial],
-      ["Аппаратная версия", bleState.hardware],
-      ["Версия ПО", bleState.software],
-      ["Версия прошивки", bleState.firmware]
-    ].forEach(function (pair) {
-      if (!pair[1]) return;
-      var nodes = document.querySelectorAll("p");
-      for (var i = 0; i < nodes.length; i++) {
-        if (normalize(nodes[i].textContent) !== pair[0]) continue;
-        var parent = nodes[i].parentElement;
-        if (!parent) continue;
-        var texts = parent.querySelectorAll("p");
-        var valueNode = texts[texts.length - 1];
-        if (!valueNode || valueNode === nodes[i]) continue;
-        valueNode.textContent = pair[1];
+    if (bleState.grip != null) {
+      var gripName = document.getElementById("34_230_0_1");
+      if (gripName) {
+        gripName.textContent = "Активный схват: " + (bleState.gripName || ("Схват " + bleState.grip));
+        gripName.style.fontSize = "0.75rem";
       }
-    });
+      paintText("34_230_1_1", "Номер схвата: " + bleState.grip);
+    }
+    var trigger = document.getElementById("34_815");
+    if (trigger) {
+      trigger.style.backgroundImage = "none";
+      trigger.style.backgroundColor = bleState.trigger ? "rgb(55,90,118)" : "rgb(180,180,180)";
+      trigger.style.borderRadius = "50%";
+    }
+    paintText("34_462", bleState.manufacturer);
+    var serial = document.getElementById("34_465");
+    if (serial && bleState.serial) {
+      serial.textContent = bleState.serial;
+      serial.style.width = "11.5rem";
+      serial.style.left = "auto";
+      serial.style.right = "0";
+    }
+    paintText("34_468", bleState.hardware);
+    paintText("34_471", bleState.software);
+    paintText("34_474", bleState.firmware);
   }
 
   function ensureDevicePicker() {
@@ -329,16 +354,11 @@
       if (serial) {
         var bytes = new Uint8Array(serial.buffer, serial.byteOffset, serial.byteLength);
         var text = new TextDecoder("utf-8").decode(bytes).replace(/\0[\s\S]*/, "").trim();
-        onBleEvent({ event: "info", bridge: "phone", serial: text });
+        if (text) onBleEvent({ event: "info", bridge: "phone", serial: text });
       }
-      if (phoneServer && phoneServer.getPrimaryService) {
-        phoneServer.getPrimaryService("battery_service").then(function (service) {
-          return service.getCharacteristic("battery_level").then(function (char) { return char.readValue(); });
-        }).then(function (view) {
-          if (view) onBleEvent({ event: "info", bridge: "phone", battery: view.getUint8(0) });
-        }).catch(function () {});
-      }
-      if (phoneMyoRead) return readPhoneMyo().catch(function () {});
+      return Promise.all([readPhoneDis(), readPhoneBattery()]).then(function () {
+        if (phoneMyoRead) return readPhoneMyo().catch(function () {});
+      });
     }).then(function () {
       phoneJob = null;
     }, function (error) {
@@ -346,6 +366,46 @@
       throw error;
     });
     return phoneJob;
+  }
+
+  function readPhoneText(char) {
+    return char.readValue().then(function (view) {
+      var bytes = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
+      return new TextDecoder("utf-8").decode(bytes).replace(/\0[\s\S]*/, "").trim();
+    });
+  }
+
+  function readPhoneDis() {
+    if (!phoneServer) return Promise.resolve();
+    return phoneServer.getPrimaryService("0000180a-0000-1000-8000-00805f9b34fb").then(function (service) {
+      var fields = [
+        ["00002a29-0000-1000-8000-00805f9b34fb", "manufacturer"],
+        ["00002a27-0000-1000-8000-00805f9b34fb", "hardware"],
+        ["00002a28-0000-1000-8000-00805f9b34fb", "software"],
+        ["00002a26-0000-1000-8000-00805f9b34fb", "firmware"]
+      ];
+      return Promise.all(fields.map(function (pair) {
+        return service.getCharacteristic(pair[0]).then(function (char) {
+          return readPhoneText(char);
+        }).then(function (text) {
+          if (!text) return;
+          var message = { event: "info", bridge: "phone" };
+          message[pair[1]] = text;
+          onBleEvent(message);
+        }).catch(function () {});
+      }));
+    }).catch(function () {});
+  }
+
+  function readPhoneBattery() {
+    if (!phoneServer) return Promise.resolve();
+    return phoneServer.getPrimaryService("0000180f-0000-1000-8000-00805f9b34fb").then(function (service) {
+      return service.getCharacteristic("00002a19-0000-1000-8000-00805f9b34fb");
+    }).then(function (char) {
+      return char.readValue();
+    }).then(function (view) {
+      if (view) onBleEvent({ event: "info", bridge: "phone", battery: view.getUint8(0) });
+    }).catch(function () {});
   }
 
   function findPhoneDevice(attempt) {
@@ -535,6 +595,7 @@
       bleState.connected = !!payload.connected;
       bleState.bridge = !!payload.bridge;
       if (payload.mode) bleState.mode = payload.mode;
+      if (payload.name) bleState.deviceName = payload.name;
       try {
         if (payload.connected) localStorage.setItem("vega-prosthesis", "1");
         else if (payload.reason === "disconnect") localStorage.removeItem("vega-prosthesis");
@@ -562,7 +623,11 @@
       bleState.mode = payload.mode || bleState.mode;
       bleState.k1 = payload.k1;
       bleState.k2 = payload.k2;
-      bleState.gripName = payload.gripName;
+      if (payload.state != null) bleState.prosthesisState = payload.state;
+      if (payload.grip != null) {
+        bleState.grip = payload.grip;
+        bleState.gripName = payload.gripName;
+      }
       bleState.trigger = payload.trigger;
       if (payload.error !== bleState.error) {
         bleState.error = payload.error;
@@ -576,11 +641,12 @@
       return;
     }
     if (payload.event === "info") {
-      bleState.serial = payload.serial;
-      bleState.firmware = payload.firmware;
-      bleState.hardware = payload.hardware;
-      bleState.software = payload.software;
-      bleState.manufacturer = payload.manufacturer;
+      if (payload.serial) bleState.serial = payload.serial;
+      if (payload.firmware) bleState.firmware = payload.firmware;
+      if (payload.hardware) bleState.hardware = payload.hardware;
+      if (payload.software) bleState.software = payload.software;
+      if (payload.manufacturer) bleState.manufacturer = payload.manufacturer;
+      if (payload.name) bleState.deviceName = payload.name;
       if (payload.battery != null) bleState.battery = payload.battery;
       paintLink();
       return;
@@ -1065,9 +1131,7 @@
   function isDeviceCard(target) {
     var node = target;
     while (node && node !== document.body) {
-      var box = inRem(node.getBoundingClientRect());
-      var text = normalize(node.innerText);
-      if (box.h > 4 && box.h < 16 && box.w < 16 && text.length < 90 && /VEGA-\d-PRO/.test(text)) return true;
+      if (node.id === "34_168") return true;
       node = node.parentElement;
     }
     return false;
