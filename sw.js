@@ -1,4 +1,4 @@
-var CACHE = "vega-shell-1";
+var CACHE = "vega-shell-2";
 
 self.addEventListener("install", function (event) {
   self.skipWaiting();
