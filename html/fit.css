@@ -1,0 +1,65 @@
+/* Макет собран на ширине 22.5rem (360px). Корень масштабируется на всю ширину
+   экрана телефона и планшета, на более широком окне колонка не шире iPad 12.9. */
+html {
+  font-size: calc(min(100vw, 1366px) / 22.5);
+}
+
+@supports (width: 100dvw) {
+  html {
+    font-size: calc(min(100dvw, 1366px) / 22.5);
+  }
+}
+
+html,
+body {
+  overflow-x: hidden;
+  background-color: #fefefe;
+}
+
+body {
+  width: 100%;
+  max-width: 1366px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+[data-vega-press] {
+  transition: scale 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.12s ease;
+}
+
+[data-vega-press].is-down {
+  scale: 0.94;
+  filter: brightness(0.88);
+}
+
+[data-vega-press="check"].is-down {
+  scale: 0.78;
+  filter: brightness(0.96);
+}
+
+[data-vega-press="dot"].is-down {
+  scale: 0.72;
+}
+
+[data-vega-press="check"].is-pop {
+  animation: vega-check-pop 0.22s ease;
+}
+
+.vega-mark-in {
+  animation: vega-mark-in 0.18s ease;
+}
+
+@keyframes vega-check-pop {
+  0% { scale: 0.78; }
+  55% { scale: 1.14; }
+  100% { scale: 1; }
+}
+
+#vega-grips::-webkit-scrollbar {
+  height: 0.35rem;
+}
+
+#vega-grips::-webkit-scrollbar-thumb {
+  background: rgba(34, 34, 34, 0.35);
+  border-radius: 0.25rem;
+}

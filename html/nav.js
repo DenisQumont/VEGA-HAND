@@ -1,0 +1,1704 @@
+(function () {
+  var ROUTES = {
+    "Главная": "ProfileHandShacke.html",
+    "Контакты": "Contact.html",
+    "Мониторинг": "Monitor.html",
+    "Настройки": "Setting.html",
+    "О системе": "InfoSystem.html",
+    "Сервисный режим": "Service.html",
+    "Карта схватов": "GripMap.html",
+    "Добавить схват": "AddGrip.html",
+    "Добавить протез": "AddProfile.html"
+  };
+
+  function normalize(value) {
+    return (value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function prosthesisConnected() {
+    try { return localStorage.getItem("vega-prosthesis") === "1"; }
+    catch (e) { return false; }
+  }
+
+  function go(file) {
+    if (file === "ProfileHandShacke.html" && !prosthesisConnected()) file = "AddProfile.html";
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: "vega-nav", file: file }, "*");
+      return;
+    }
+    window.location.href = file;
+  }
+
+  var bleState = { connected: false, bridge: false, mode: "", k1: 1, k2: 1, error: null };
+  var localSocket = null;
+  var pendingMode = "";
+  var editingSensor = "";
+
+  function bleRequest(payload) {
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: "vega-ble", payload: payload }, "*");
+      return;
+    }
+    if (!localSocket || localSocket.readyState !== 1) {
+      var url = (location.protocol === "https:" ? "wss://" : "ws://") + location.hostname + ":8092";
+      localSocket = new WebSocket(url);
+      localSocket.addEventListener("message", function (event) {
+        onBleEvent(JSON.parse(event.data));
+      });
+      localSocket.addEventListener("open", function () {
+        localSocket.send(JSON.stringify(payload));
+      });
+      localSocket.addEventListener("close", function () {
+        onBleEvent({ event: "status", bridge: false, connected: false, reason: "disconnect" });
+      });
+      return;
+    }
+    localSocket.send(JSON.stringify(payload));
+  }
+
+  function toast(text) {
+    if (!text) return;
+    var el = document.getElementById("vega-toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "vega-toast";
+      el.style.cssText = "position:fixed;left:50%;bottom:5.6rem;transform:translateX(-50%);width:18.5rem;padding:0.75rem 0.9rem;border-radius:0.75rem;background:#222;color:#fff;font-family:Roboto-Medium,sans-serif;font-size:0.8125rem;line-height:1.15rem;z-index:8;display:none;text-align:center;";
+      document.body.appendChild(el);
+    }
+    el.textContent = text;
+    el.style.display = "block";
+    window.clearTimeout(el._timer);
+    el._timer = window.setTimeout(function () { el.style.display = "none"; }, 3600);
+  }
+
+  function paintLink() {
+    var line = document.getElementById("34_481");
+    if (line) {
+      if (!bleState.connected) line.textContent = "Нет связи";
+      else line.textContent = bleState.mode === "service" ? "Сервис" : "Подключен";
+    }
+    var battery = document.getElementById("34_478");
+    if (battery && bleState.battery != null) battery.textContent = bleState.battery + "%";
+    var grip = document.getElementById("34_230_0_1");
+    if (grip && bleState.gripName) grip.textContent = "Активный схват: " + bleState.gripName;
+    var dot = document.getElementById("34_815");
+    if (dot) {
+      dot.style.backgroundImage = "none";
+      dot.style.backgroundColor = bleState.trigger ? "rgb(55,90,118)" : "rgb(180,180,180)";
+      dot.style.borderRadius = "50%";
+    }
+    [
+      ["Производитель", bleState.manufacturer],
+      ["Серийный номер", bleState.serial],
+      ["Аппаратная версия", bleState.hardware],
+      ["Версия ПО", bleState.software],
+      ["Версия прошивки", bleState.firmware]
+    ].forEach(function (pair) {
+      if (!pair[1]) return;
+      var nodes = document.querySelectorAll("p");
+      for (var i = 0; i < nodes.length; i++) {
+        if (normalize(nodes[i].textContent) !== pair[0]) continue;
+        var parent = nodes[i].parentElement;
+        if (!parent) continue;
+        var texts = parent.querySelectorAll("p");
+        var valueNode = texts[texts.length - 1];
+        if (!valueNode || valueNode === nodes[i]) continue;
+        valueNode.textContent = pair[1];
+      }
+    });
+  }
+
+  function ensureDevicePicker() {
+    var dialog = document.getElementById("vega-devices");
+    if (dialog) return dialog;
+    dialog = document.createElement("div");
+    dialog.id = "vega-devices";
+    dialog.style.cssText = "display:none;width:22.5rem;max-height:28rem;overflow:auto;position:fixed;left:0;right:0;margin:0 auto;bottom:4.5rem;border-radius:0.875rem 0.875rem 0 0;background:#fefefe;box-shadow:0 -0.125rem 0.375rem rgba(0,0,0,.25);z-index:6;padding:1.25rem 1.25rem 1.5rem;";
+    dialog.innerHTML = '<p data-vega-device-title style="margin:0 0 0.35rem;font-family:Roboto-Bold,sans-serif;font-weight:700;font-size:1.375rem;color:#222;">Протезы рядом</p><p data-vega-device-note style="margin:0 0 0.9rem;font-family:Roboto-Regular,sans-serif;font-size:0.875rem;color:#666;">Поиск</p><div data-vega-device-list></div>';
+    document.body.appendChild(dialog);
+    return dialog;
+  }
+
+  function renderDevices(devices) {
+    var dialog = ensureDevicePicker();
+    var note = dialog.querySelector("[data-vega-device-note]");
+    var list = dialog.querySelector("[data-vega-device-list]");
+    list.innerHTML = "";
+    if (!devices || !devices.length) {
+      note.textContent = bleState.bridge ? "Протезы не найдены. Включите протез и повторите поиск." : "Мост BLE не запущен. На компьютере выполните: python bridge/serve.py";
+      return;
+    }
+    note.textContent = "Выберите протез для подключения";
+    devices.forEach(function (device) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("data-vega-address", device.address);
+      button.textContent = device.name + (device.rssi != null ? "  " + device.rssi + " dBm" : "");
+      button.style.cssText = "display:block;width:100%;margin:0 0 0.5rem;padding:0.85rem 1rem;border:0.125rem solid #000;border-radius:0.75rem;background:#fff;font-family:Roboto-Medium,sans-serif;font-size:0.875rem;text-align:left;cursor:pointer;";
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        note.textContent = "Подключение к " + device.name + "…";
+        bleRequest({ cmd: "connect", address: device.address });
+      });
+      list.appendChild(button);
+    });
+  }
+
+  function openDevicePicker() {
+    pendingMode = "";
+    editingSensor = "";
+    var dialog = ensureDevicePicker();
+    var note = dialog.querySelector("[data-vega-device-note]");
+    note.textContent = "Поиск протезов…";
+    dialog.querySelector("[data-vega-device-list]").innerHTML = "";
+    pinOverlay(dialog, "4.5rem");
+    bleRequest({ cmd: "scan" });
+  }
+
+  function confirmMode(mode) {
+    pendingMode = mode;
+    editingSensor = "";
+    var service = mode === "service";
+    var dialog = openStub(
+      service ? "Сервисный режим протеза" : "Пользовательский режим",
+      service ? "Протез перейдёт в сервисный режим и перезагрузит BLE. Телефонное подключение при этом разорвётся." : "Протез вернётся в пользовательский режим и перезагрузит BLE.",
+      "",
+      "Отправить",
+      "Подтвердите переключение",
+      ""
+    );
+    var box = dialog.querySelector("[data-vega-stub-box]");
+    if (box) box.style.display = "none";
+  }
+
+  function onBleEvent(payload) {
+    if (!payload || !payload.event) return;
+    if (payload.event === "status") {
+      bleState.connected = !!payload.connected;
+      bleState.bridge = !!payload.bridge;
+      if (payload.mode) bleState.mode = payload.mode;
+      try {
+        if (payload.connected) localStorage.setItem("vega-prosthesis", "1");
+        else if (payload.reason === "disconnect") localStorage.removeItem("vega-prosthesis");
+      } catch (e) {}
+      paintLink();
+      if (payload.connected && payload.reason === "connect") {
+        hideOverlays();
+        go("ProfileHandShacke.html");
+      }
+      if (!payload.connected && payload.reason === "disconnect" && /ProfileHandShacke\.html$/.test(location.pathname)) {
+        go("AddProfile.html");
+      }
+      if (payload.reason === "hello" && !payload.bridge) {
+        var note = document.querySelector("#vega-devices [data-vega-device-note]");
+        if (note && document.getElementById("vega-devices").style.display !== "none") {
+          note.textContent = "Мост BLE не запущен. На компьютере выполните: python bridge/serve.py";
+        }
+      }
+      return;
+    }
+    if (payload.event === "devices") {
+      bleState.bridge = true;
+      renderDevices(payload.devices || []);
+      return;
+    }
+    if (payload.event === "telemetry") {
+      bleState.connected = true;
+      bleState.mode = payload.mode || bleState.mode;
+      bleState.k1 = payload.k1;
+      bleState.k2 = payload.k2;
+      bleState.gripName = payload.gripName;
+      bleState.trigger = payload.trigger;
+      if (payload.error !== bleState.error) {
+        bleState.error = payload.error;
+        if (payload.errorText) toast(payload.errorText);
+      }
+      if (payload.lowBattery && !bleState.lowBattery) toast("Протез разряжен");
+      bleState.lowBattery = !!payload.lowBattery;
+      paintLink();
+      return;
+    }
+    if (payload.event === "info") {
+      bleState.serial = payload.serial;
+      bleState.firmware = payload.firmware;
+      bleState.hardware = payload.hardware;
+      bleState.software = payload.software;
+      bleState.manufacturer = payload.manufacturer;
+      if (payload.battery != null) bleState.battery = payload.battery;
+      paintLink();
+      return;
+    }
+    if (payload.event === "myo" && payload.values && !payload.written) {
+      try { sessionStorage.setItem("vega-myo-advanced", JSON.stringify(payload.values)); } catch (e) {}
+      if (typeof paintParamValues === "function") paintParamValues();
+      toast("Настройки миодатчиков прочитаны с протеза");
+      return;
+    }
+    if (payload.event === "myo" && payload.written) {
+      toast("Настройки миодатчиков отправлены");
+      return;
+    }
+    if (payload.event === "mode") {
+      toast(payload.message || "Режим отправлен");
+      return;
+    }
+    if (payload.event === "k") {
+      bleState.k1 = payload.k1;
+      bleState.k2 = payload.k2;
+      toast("Коэффициент миодатчика отправлен");
+      return;
+    }
+    if (payload.event === "error") toast(payload.message || "Ошибка BLE");
+  }
+
+  window.addEventListener("message", function (event) {
+    if (!event.data || event.data.type !== "vega-ble-event") return;
+    onBleEvent(event.data.payload);
+  });
+
+  var sheets = Array.prototype.filter.call(document.querySelectorAll("div"), function (el) {
+    var style = el.getAttribute("style") || "";
+    return style.indexOf("display: none") !== -1 && style.indexOf("41.25rem") !== -1 && style.indexOf("bottom: 0") !== -1;
+  });
+
+  var valueDialog = Array.prototype.filter.call(document.querySelectorAll("div"), function (el) {
+    var style = el.getAttribute("style") || "";
+    return style.indexOf("display: none") !== -1 && (el.textContent || "").indexOf("Чувствительность MYO") !== -1;
+  })[0] || null;
+
+  var scrim = document.createElement("div");
+  scrim.setAttribute("data-vega-scrim", "1");
+  scrim.style.cssText = "display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:4;";
+  document.body.appendChild(scrim);
+
+  function sheetTitle(el) {
+    var text = el.textContent || "";
+    if (text.indexOf("Список устройств") !== -1 && text.indexOf("Доступные") !== -1) return "Список устройств";
+    if (text.indexOf("Информация об устройстве") !== -1) return "Информация об устройстве";
+    return "";
+  }
+
+  var stubDialog = null;
+
+  function hideOverlays() {
+    sheets.forEach(function (el) { el.style.display = "none"; });
+    if (valueDialog) valueDialog.style.display = "none";
+    if (stubDialog) stubDialog.style.display = "none";
+    var devices = document.getElementById("vega-devices");
+    if (devices) devices.style.display = "none";
+    scrim.style.display = "none";
+  }
+
+  function pinOverlay(el, bottom) {
+    if (el.parentElement !== document.body) document.body.appendChild(el);
+    el.style.display = "block";
+    el.style.position = "fixed";
+    el.style.zIndex = "6";
+    el.style.left = "0";
+    el.style.right = "0";
+    el.style.marginLeft = "auto";
+    el.style.marginRight = "auto";
+    el.style.bottom = bottom;
+    scrim.style.display = "block";
+  }
+
+  function sharpenDeviceListButton(sheet) {
+    var labels = sheet.querySelectorAll("p");
+    for (var i = 0; i < labels.length; i++) {
+      if (normalize(labels[i].textContent) !== "Список устройств") continue;
+      var style = labels[i].getAttribute("style") || "";
+      if (style.indexOf("height: 3rem") === -1) continue;
+      var shell = labels[i].parentElement && labels[i].parentElement.parentElement;
+      if (!shell) continue;
+      var kids = shell.children;
+      for (var j = 0; j < kids.length; j++) {
+        var kidStyle = kids[j].getAttribute("style") || "";
+        if (kidStyle.indexOf("border-style: solid") === -1) continue;
+        kids[j].style.zIndex = "2";
+        kids[j].style.border = "0.125rem solid #111";
+        kids[j].style.boxSizing = "border-box";
+        kids[j].style.borderRadius = "0.625rem";
+      }
+    }
+  }
+
+  function openSheet(title) {
+    var opened = false;
+    sheets.forEach(function (el) {
+      if (sheetTitle(el) === title) {
+        pinOverlay(el, "0");
+        if (title === "Информация об устройстве") {
+          var rows = el.querySelectorAll("div");
+          for (var i = 0; i < rows.length; i++) {
+            if (normalize(rows[i].innerText) !== "Подключен") continue;
+            var box = inRem(rows[i].getBoundingClientRect());
+            if (box.h < 2 || box.h > 4 || box.w < 8) continue;
+            rows[i].style.backgroundColor = "rgb(55, 90, 118)";
+          }
+          sharpenDeviceListButton(el);
+        }
+        opened = true;
+      } else {
+        el.style.display = "none";
+      }
+    });
+    if (valueDialog) valueDialog.style.display = "none";
+    if (stubDialog) stubDialog.style.display = "none";
+    if (!opened) scrim.style.display = "none";
+  }
+
+  function openValueDialog() {
+    if (!valueDialog) return;
+    var host = document.getElementById("35_487");
+    var caption = document.getElementById("35_488");
+    if (host) {
+      var field = host.querySelector("[data-vega-number]");
+      if (!field) {
+        field = document.createElement("input");
+        field.setAttribute("data-vega-number", "1");
+        field.type = "text";
+        field.inputMode = "decimal";
+        field.autocomplete = "off";
+        field.placeholder = "Пример: 0.4";
+        field.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;padding:0 1rem;font-size:0.875rem;font-family:Roboto-Regular,sans-serif;color:#222;outline:none;z-index:3;";
+        host.appendChild(field);
+        bindNumeric(field);
+      }
+      field.value = "";
+      if (caption) caption.style.visibility = "hidden";
+      window.setTimeout(function () { field.focus(); }, 0);
+    }
+    sheets.forEach(function (el) { el.style.display = "none"; });
+    if (stubDialog) stubDialog.style.display = "none";
+    pinOverlay(valueDialog, "4.5rem");
+    valueDialog.style.zIndex = "6";
+  }
+
+  function ensureStub() {
+    if (stubDialog) return stubDialog;
+    var dialog = document.createElement("div");
+    dialog.id = "vega-stub";
+    dialog.style.cssText = "display:none;width:20.625rem;height:18.75rem;overflow:hidden;border-radius:0.875rem;background:#fefefe;box-shadow:0 0.5rem 1.5rem rgba(0,0,0,.18);";
+    dialog.innerHTML = ''
+      + '<p data-vega-stub-title style="position:absolute;left:1.625rem;top:1.5rem;width:17.3rem;margin:0;font-size:1.25rem;font-family:Roboto-Medium,sans-serif;font-weight:500;line-height:1.55rem;color:#111;"></p>'
+      + '<p data-vega-stub-hint style="position:absolute;left:1.6875rem;top:5.35rem;width:17.25rem;margin:0;font-size:0.75rem;font-family:Roboto-Medium,sans-serif;font-weight:500;line-height:1rem;color:rgb(139,137,137);">Форма в разработке</p>'
+      + '<div data-vega-stub-box style="position:absolute;left:1.625rem;top:7.15rem;width:17.375rem;height:2.625rem;border-radius:0.875rem;background:rgba(242,238,238,.6);border:0.125rem solid #dedede;box-sizing:border-box;">'
+      + '<p data-vega-stub-placeholder style="position:absolute;left:1rem;top:0.85rem;margin:0;font-size:0.875rem;font-family:Roboto-Regular,sans-serif;color:rgb(139,139,139);"></p>'
+      + '<input data-vega-stub-field data-vega-number="1" type="text" inputmode="decimal" autocomplete="off" style="display:none;position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;padding:0 1rem;font-size:0.875rem;font-family:Roboto-Regular,sans-serif;color:#222;outline:none;z-index:2;"></div>'
+      + '<p data-vega-stub-note style="position:absolute;left:1.625rem;top:10.35rem;width:17.25rem;margin:0;font-size:0.75rem;font-family:Roboto-Medium,sans-serif;font-weight:500;color:rgb(139,137,137);">Заглушка, как у параметра в сервисных настройках</p>'
+      + '<div data-vega-grip-picks="1" style="display:none;">'
+      + '<p style="position:absolute;left:1.625rem;top:6.35rem;margin:0;font-size:0.75rem;font-family:Roboto-Medium,sans-serif;font-weight:500;color:rgb(139,137,137);">Схват 1</p>'
+      + '<select data-vega-grip-a style="position:absolute;left:1.625rem;top:7.2rem;width:17.375rem;height:2.625rem;border-radius:0.875rem;border:0.125rem solid #dedede;background:rgba(242,238,238,.6);padding:0 0.75rem;font-size:0.875rem;font-family:Roboto-Regular,sans-serif;color:#222;"></select>'
+      + '<p style="position:absolute;left:1.625rem;top:10.05rem;margin:0;font-size:0.75rem;font-family:Roboto-Medium,sans-serif;font-weight:500;color:rgb(139,137,137);">Схват 2</p>'
+      + '<select data-vega-grip-b style="position:absolute;left:1.625rem;top:10.9rem;width:17.375rem;height:2.625rem;border-radius:0.875rem;border:0.125rem solid #dedede;background:rgba(242,238,238,.6);padding:0 0.75rem;font-size:0.875rem;font-family:Roboto-Regular,sans-serif;color:#222;"></select>'
+      + '</div>'
+      + '<div style="position:absolute;left:1.625rem;top:14.15rem;width:7.8125rem;height:3rem;border-radius:0.625rem;background:rgb(55,90,118);cursor:pointer;"><p data-vega-stub-action style="margin:0;height:3rem;display:flex;align-items:center;justify-content:center;font-size:1rem;font-family:Roboto-Bold,sans-serif;font-weight:700;color:#fefefe;">Сохранить</p></div>'
+      + '<div style="position:absolute;left:10.5625rem;top:14.15rem;width:7.8125rem;height:3rem;border-radius:0.625rem;background:#fff;border:0.125rem solid #000;box-sizing:border-box;cursor:pointer;"><p style="margin:0;height:3rem;display:flex;align-items:center;justify-content:center;font-size:1rem;font-family:Roboto-Bold,sans-serif;font-weight:700;color:#000;">Отмена</p></div>';
+    document.body.appendChild(dialog);
+    stubDialog = dialog;
+    return dialog;
+  }
+
+  function digitsOnly(value) {
+    var text = String(value || "").replace(/,/g, ".");
+    var out = "";
+    var dot = false;
+    for (var i = 0; i < text.length; i++) {
+      var ch = text.charAt(i);
+      if (ch >= "0" && ch <= "9") out += ch;
+      else if (ch === "." && !dot) {
+        dot = true;
+        out += ch;
+      }
+    }
+    return out;
+  }
+
+  function withinSensitivity(text) {
+    if (text === "" || text === ".") return true;
+    var body = text.charAt(text.length - 1) === "." ? text.slice(0, -1) : text;
+    if (body === "") return true;
+    var value = parseFloat(body);
+    return !isNaN(value) && value >= 0 && value <= 1;
+  }
+
+  function cleanUint(text) {
+    var digits = String(text || "").replace(/\D/g, "");
+    if (!digits) return "";
+    var n = parseInt(digits, 10);
+    if (isNaN(n) || n > 65535) return null;
+    return String(n);
+  }
+
+  function bindNumeric(input, mode) {
+    input.dataset.vegaMode = mode || "unit";
+    if (!input.dataset.vegaLast) input.dataset.vegaLast = "";
+    if (input.dataset.vegaBound) return;
+    input.dataset.vegaBound = "1";
+    function currentMode() { return input.dataset.vegaMode || "unit"; }
+    input.addEventListener("beforeinput", function (event) {
+      if (!event.data) return;
+      if (event.inputType === "insertFromPaste" || event.inputType === "insertFromDrop") return;
+      var integer = currentMode() === "u16";
+      var i;
+      for (i = 0; i < event.data.length; i++) {
+        var ch = event.data.charAt(i);
+        if (ch >= "0" && ch <= "9") continue;
+        if (!integer && (ch === "." || ch === ",")) continue;
+        event.preventDefault();
+        return;
+      }
+      var start = input.selectionStart || 0;
+      var end = input.selectionEnd || 0;
+      var raw = input.value.slice(0, start) + event.data + input.value.slice(end);
+      if (integer) {
+        if (cleanUint(raw) === null) event.preventDefault();
+        return;
+      }
+      if (!withinSensitivity(digitsOnly(raw))) event.preventDefault();
+    });
+    input.addEventListener("input", function () {
+      var integer = currentMode() === "u16";
+      var next = integer ? cleanUint(input.value) : digitsOnly(input.value);
+      if (next === null || (!integer && !withinSensitivity(next))) next = input.dataset.vegaLast || "";
+      if (input.value !== next) {
+        var pos = input.selectionStart || next.length;
+        input.value = next;
+        var caret = Math.max(0, Math.min(pos, next.length));
+        input.setSelectionRange(caret, caret);
+      }
+      input.dataset.vegaLast = input.value;
+    });
+  }
+
+  function openStub(title, hint, placeholder, action, note, numeric) {
+    var dialog = ensureStub();
+    dialog.querySelector("[data-vega-stub-title]").textContent = title;
+    dialog.querySelector("[data-vega-stub-hint]").textContent = hint || "Форма в разработке";
+    dialog.querySelector("[data-vega-stub-note]").textContent = note || "Заглушка, как у параметра в сервисных настройках";
+    dialog.querySelector("[data-vega-stub-action]").textContent = action || "Сохранить";
+    var hintText = placeholder || "Пример: 0.4";
+    var label = dialog.querySelector("[data-vega-stub-placeholder]");
+    var field = dialog.querySelector("[data-vega-stub-field]");
+    var mode = numeric === true ? "unit" : (typeof numeric === "string" ? numeric : "");
+    dialog.dataset.vegaGrip = "";
+    var picks = dialog.querySelector("[data-vega-grip-picks]");
+    var box = dialog.querySelector("[data-vega-stub-box]");
+    if (picks) picks.style.display = "none";
+    if (box) box.style.display = "";
+    dialog.querySelector("[data-vega-stub-note]").style.display = "";
+    label.textContent = hintText;
+    label.style.display = mode ? "none" : "";
+    field.style.display = mode ? "block" : "none";
+    field.value = "";
+    field.placeholder = hintText;
+    field.inputMode = mode === "u16" ? "numeric" : "decimal";
+    if (mode) bindNumeric(field, mode);
+    sheets.forEach(function (el) { el.style.display = "none"; });
+    if (valueDialog) valueDialog.style.display = "none";
+    pinOverlay(dialog, "4.5rem");
+    dialog.style.zIndex = "6";
+    dialog.style.transform = "none";
+    var avail = (window.innerHeight || document.documentElement.clientHeight) - 5.2 * rootPx();
+    var needed = 18.75 * rootPx();
+    if (needed > avail && avail > 80) {
+      dialog.style.transformOrigin = "center bottom";
+      dialog.style.transform = "scale(" + Math.max(0.55, avail / needed).toFixed(3) + ")";
+    }
+    if (mode) window.setTimeout(function () { field.focus(); }, 0);
+    return dialog;
+  }
+
+  function gripNames() {
+    var names = [];
+    var row = document.getElementById("vega-grips");
+    if (row) {
+      var cards = row.children;
+      for (var i = 0; i < cards.length; i++) {
+        var text = normalize(cards[i].innerText);
+        if (!text || text === "Добавить схват") continue;
+        names.push(text);
+      }
+    }
+    return names.length ? names : ["Жест Джамбо", "Жест Коза", "Схват Ключа"];
+  }
+
+  function gripChoice() {
+    try { return JSON.parse(localStorage.getItem("vega-grip-load") || "{}"); }
+    catch (e) { return {}; }
+  }
+
+  function fillGripSelect(select, names, chosen) {
+    select.innerHTML = "";
+    names.forEach(function (name) {
+      var option = document.createElement("option");
+      option.value = name;
+      option.textContent = name;
+      select.appendChild(option);
+    });
+    if (names.indexOf(chosen) !== -1) select.value = chosen;
+    else if (names.length) select.value = names[0];
+  }
+
+  function openGripLoad() {
+    pendingMode = "";
+    editingSensor = "";
+    var names = gripNames();
+    var saved = gripChoice();
+    var dialog = openStub("Загрузить схваты", "Выберите два схвата из библиотеки", "", "Отправить", " ", "");
+    dialog.dataset.vegaGrip = "1";
+    dialog.querySelector("[data-vega-stub-box]").style.display = "none";
+    dialog.querySelector("[data-vega-stub-note]").style.display = "none";
+    var picks = dialog.querySelector("[data-vega-grip-picks]");
+    picks.style.display = "block";
+    var fallbackB = names[Math.min(1, names.length - 1)] || "";
+    fillGripSelect(picks.querySelector("[data-vega-grip-a]"), names, saved.a || names[0] || "");
+    fillGripSelect(picks.querySelector("[data-vega-grip-b]"), names, saved.b || fallbackB);
+  }
+
+  function saveGripLoad() {
+    var dialog = document.getElementById("vega-stub");
+    if (!dialog || dialog.dataset.vegaGrip !== "1") return;
+    var a = dialog.querySelector("[data-vega-grip-a]");
+    var b = dialog.querySelector("[data-vega-grip-b]");
+    try { localStorage.setItem("vega-grip-load", JSON.stringify({ a: a.value, b: b.value })); }
+    catch (e) {}
+    dialog.dataset.vegaGrip = "";
+  }
+
+  function rootPx() {
+    return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  }
+
+  function inRem(rect) {
+    var px = rootPx();
+    return { w: rect.width / px, h: rect.height / px };
+  }
+
+  function routeOf(node) {
+    if (!node || node.nodeType !== 1) return "";
+    var file = ROUTES[normalize(node.innerText)];
+    if (!file) return "";
+    var box = inRem(node.getBoundingClientRect());
+    if (box.w < 0.5 || box.h < 0.5 || box.h > 12 || box.w > 22.5) return "";
+    return file;
+  }
+
+  function findRoute(target) {
+    var node = target;
+    while (node && node !== document.body) {
+      var file = routeOf(node);
+      if (file) return file;
+      node = node.parentElement;
+    }
+    return "";
+  }
+
+  function isUpButton(target) {
+    var node = target;
+    while (node && node !== document.body) {
+      if (node.getAttribute && node.getAttribute("data-vega-up") === "1") return true;
+      var style = node.getAttribute("style") || "";
+      if (style.indexOf("width: 3.875rem") !== -1 && style.indexOf("height: 3.875rem") !== -1) return true;
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  function hideIconBesideNotification() {
+    var nodes = document.querySelectorAll("div");
+    for (var i = 0; i < nodes.length; i++) {
+      var style = nodes[i].getAttribute("style") || "";
+      if (style.indexOf("d4fcacf4ac2660b0476c8408d717a0b3db741651") === -1) continue;
+      var shell = nodes[i];
+      while (shell && shell !== document.body) {
+        var shellStyle = shell.getAttribute("style") || "";
+        if (shellStyle.indexOf("width: 3.125rem") !== -1 && shellStyle.indexOf("height: 3.1875rem") !== -1) {
+          shell.style.display = "none";
+          break;
+        }
+        shell = shell.parentElement;
+      }
+    }
+  }
+
+  function pinUpButton(button) {
+    button.setAttribute("data-vega-up", "1");
+    button.style.position = "fixed";
+    button.style.zIndex = "3";
+    button.style.top = "auto";
+    button.style.left = "auto";
+    button.style.margin = "0";
+    button.style.bottom = "5.15rem";
+    button.style.right = "max(0.875rem, calc((100vw - 22.5rem) / 2 + 0.875rem))";
+    button.style.cursor = "pointer";
+  }
+
+  function ensureUpButton() {
+    var nodes = document.querySelectorAll("div");
+    var found = null;
+    for (var i = 0; i < nodes.length; i++) {
+      var style = nodes[i].getAttribute("style") || "";
+      if (style.indexOf("width: 3.875rem") === -1 || style.indexOf("height: 3.875rem") === -1) continue;
+      if (!found) found = nodes[i];
+      else nodes[i].style.display = "none";
+    }
+    if (!found) {
+      found = document.createElement("div");
+      found.style.width = "3.875rem";
+      found.style.height = "3.875rem";
+      found.style.backgroundImage = "url(./image/Frame_34_225.svg)";
+      found.style.backgroundSize = "100% 100%";
+      found.style.backgroundRepeat = "no-repeat";
+      document.body.appendChild(found);
+    }
+    pinUpButton(found);
+    syncUpButton();
+    if (!document.body.dataset.vegaUpSync) {
+      document.body.dataset.vegaUpSync = "1";
+      document.addEventListener("scroll", syncUpButton, true);
+      window.addEventListener("resize", syncUpButton);
+      window.setInterval(syncUpButton, 250);
+    }
+  }
+
+  function syncUpButton() {
+    var button = document.querySelector("[data-vega-up]");
+    if (!button) return;
+    var br = button.getBoundingClientRect();
+    var cover = false;
+    ["34_834", "34_868"].forEach(function (id) {
+      var icon = document.getElementById(id);
+      if (!icon) return;
+      var r = icon.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) return;
+      if (br.left < r.right && br.right > r.left && br.top < r.bottom && br.bottom > r.top) cover = true;
+    });
+    var badges = document.querySelectorAll("[data-vega-param-value]");
+    for (var i = 0; i < badges.length; i++) {
+      var box = badges[i].getBoundingClientRect();
+      if (box.width < 1 || box.height < 1) continue;
+      if (br.left < box.right && br.right > box.left && br.top < box.bottom && br.bottom > box.top) cover = true;
+    }
+    button.style.visibility = cover ? "hidden" : "";
+  }
+
+  function isDeviceCard(target) {
+    var node = target;
+    while (node && node !== document.body) {
+      var box = inRem(node.getBoundingClientRect());
+      var text = normalize(node.innerText);
+      if (box.h > 4 && box.h < 16 && box.w < 16 && text.length < 90 && /VEGA-\d-PRO/.test(text)) return true;
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  function inServiceParams(target) {
+    var node = target;
+    while (node && node !== document.body) {
+      var style = node.getAttribute("style") || "";
+      if (style.indexOf("height: 45rem") !== -1) return true;
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  var SERVICE_PARAMS = [
+    { id: "35_402", key: "dir_treshold", def: 105, name: "Порог отсечки миосигнала" },
+    { id: "35_403", key: "TrigPercentTreshold", def: 2, name: "Порог триггера по абсолютной разнице" },
+    { id: "35_404", key: "TriggerBlocks", def: 50, name: "Значение триггера, блок. движение" },
+    { id: "35_429", key: "TrigTresholdHigh", def: 945, name: "Верхний порог триггера" },
+    { id: "35_413", key: "TrigTresholdLow", def: 819, name: "Нижний порог триггера" },
+    { id: "35_416", key: "DifTriggerPlus", def: 50, name: "Скорость роста триггера" },
+    { id: "35_418", key: "DifTriggerMinus", def: 6, name: "Скорость падения триггера" },
+    { id: "35_449", key: "TrigDelayMax", def: 945, name: "Максимальная задержка триигера" },
+    { id: "35_450", key: "DifTrDelayMinus", def: 1, name: "Скорость уменьшения задержки" },
+    { id: "35_442", key: "DifMovePlus", def: 3, name: "Скорость увеличения движения" },
+    { id: "35_444", key: "DifMoveMinus", def: 2, name: "Скорость уменьшения движения" },
+    { id: "35_446", key: "MoveTresholdHigh", def: 315, name: "Макс. значение переменной движения" },
+    { id: "35_452", key: "MoveBlocks", def: 20, name: "Значение move, блокирующее триггеры" },
+    { id: "35_454", key: "dead_Zone_Myo1", def: 250, name: "Зона нечувствительности MYO-1" },
+    { id: "35_456", key: "dead_Zone_Myo2", def: 250, name: "Зона нечувствительности MYO-2" }
+  ];
+  var SERVICE_BY_ID = {};
+  SERVICE_PARAMS.forEach(function (spec) { SERVICE_BY_ID[spec.id] = spec; });
+  var editingParam = null;
+  var PARAM_STORE = "vega-myo-advanced";
+
+  function loadParams() {
+    var saved = {};
+    try { saved = JSON.parse(sessionStorage.getItem(PARAM_STORE) || "{}"); } catch (e) { saved = {}; }
+    var values = {};
+    SERVICE_PARAMS.forEach(function (spec) {
+      var n = parseInt(saved[spec.key], 10);
+      values[spec.key] = isNaN(n) || n < 0 || n > 65535 ? spec.def : n;
+    });
+    return values;
+  }
+
+  function storeParams(values) {
+    sessionStorage.setItem(PARAM_STORE, JSON.stringify(values));
+    paintParamValues();
+  }
+
+  function paintParamValues() {
+    var values = loadParams();
+    SERVICE_PARAMS.forEach(function (spec) {
+      var row = document.getElementById(spec.id);
+      if (!row) return;
+      var name = row.querySelector("[data-vega-param-name]");
+      var badge = row.querySelector("[data-vega-param-value]");
+      if (!name) {
+        row.textContent = "";
+        row.style.display = "flex";
+        row.style.flexDirection = "row";
+        row.style.alignItems = "center";
+        row.style.justifyContent = "space-between";
+        row.style.width = "18.75rem";
+        row.style.cursor = "pointer";
+        name = document.createElement("span");
+        name.setAttribute("data-vega-param-name", "1");
+        name.textContent = spec.name;
+        name.style.cssText = "overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1 1 auto;";
+        badge = document.createElement("span");
+        badge.setAttribute("data-vega-param-value", "1");
+        badge.style.cssText = "flex:0 0 auto;margin-left:0.75rem;font-family:Roboto-Bold,sans-serif;font-weight:700;color:rgb(55,90,118);";
+        row.appendChild(name);
+        row.appendChild(badge);
+      }
+      badge.textContent = String(values[spec.key]);
+    });
+  }
+
+  function serviceParamRow(target) {
+    var node = target;
+    while (node && node !== document.body) {
+      if (node.id && SERVICE_BY_ID[node.id]) return node;
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  function openParam(row) {
+    var spec = SERVICE_BY_ID[row.id];
+    if (!spec) return;
+    var current = String(loadParams()[spec.key]);
+    openStub(spec.name, "Введите целое значение", "Например: " + spec.def, "Сохранить", "Диапазон значений: 0 ... 65535", "u16");
+    editingParam = spec.key;
+    pendingMode = "";
+    editingSensor = "";
+    var field = document.querySelector("#vega-stub [data-vega-stub-field]");
+    field.value = current;
+    field.dataset.vegaLast = current;
+  }
+
+  function saveParam() {
+    var field = document.querySelector("#vega-stub [data-vega-stub-field]");
+    var cleaned = field ? cleanUint(field.value) : null;
+    if (!editingParam || cleaned === null || cleaned === "") return;
+    var values = loadParams();
+    values[editingParam] = parseInt(cleaned, 10);
+    editingParam = null;
+    storeParams(values);
+    hideOverlays();
+    bleRequest({ cmd: "write_myo", values: values });
+  }
+
+  function resetParams() {
+    var values = {};
+    SERVICE_PARAMS.forEach(function (spec) { values[spec.key] = spec.def; });
+    editingParam = null;
+    storeParams(values);
+    hideOverlays();
+    bleRequest({ cmd: "write_myo", values: values });
+  }
+
+  var SERVICE_PASSWORD = "193409";
+  var devOpen = true;
+  var serviceScrolled = false;
+  var FINGERS = ["Большой палец", "Указательный палец", "Средний палец", "Безымянный палец", "Мизинец"];
+
+  function serviceUnlocked() {
+    return sessionStorage.getItem("vega-service") === "1";
+  }
+
+  function initPassword() {
+    var hint = document.getElementById("35_790");
+    var box = document.getElementById("35_789");
+    if (!hint || !box || box.querySelector("input")) return;
+    hint.style.display = "none";
+    var input = document.createElement("input");
+    input.setAttribute("data-vega-password", "1");
+    input.type = "password";
+    input.inputMode = "numeric";
+    input.placeholder = "Пароль";
+    input.autocomplete = "off";
+    input.maxLength = 12;
+    input.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;padding:0 1.25rem;font-size:0.875rem;font-family:Roboto-Regular,sans-serif;color:#222;z-index:2;outline:none;";
+    box.appendChild(input);
+    input.addEventListener("input", function () {
+      var err = box.querySelector("[data-vega-pass-error]");
+      if (err) err.remove();
+      box.style.boxShadow = "";
+    });
+    input.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      submitPassword();
+    });
+  }
+
+  function submitPassword() {
+    var input = document.querySelector("[data-vega-password]");
+    var box = document.getElementById("35_789");
+    if (!input || !box) return;
+    if (input.value.trim() === SERVICE_PASSWORD) {
+      sessionStorage.setItem("vega-service", "1");
+      go("Setting.html#service");
+      return;
+    }
+    var err = box.querySelector("[data-vega-pass-error]");
+    if (!err) {
+      err = document.createElement("p");
+      err.setAttribute("data-vega-pass-error", "1");
+      err.textContent = "Неверный пароль";
+      err.style.cssText = "position:absolute;left:0.25rem;top:2.9rem;margin:0;font-size:0.75rem;font-family:Roboto-Medium,sans-serif;font-weight:500;color:#b42318;z-index:3;width:12rem;";
+      box.appendChild(err);
+    }
+    box.style.boxShadow = "0 0 0 0.125rem #b42318";
+    input.focus();
+  }
+
+  function wrapDevChevron() {
+    var right = document.getElementById("35_461");
+    var left = document.getElementById("35_462");
+    if (!right || !left || document.getElementById("vega-dev-chevron")) return;
+    var wrap = document.createElement("div");
+    wrap.id = "vega-dev-chevron";
+    wrap.style.cssText = "position:absolute;left:18.8975rem;top:1.0216rem;width:1.0662rem;height:0.6676rem;transform-origin:center center;";
+    right.parentElement.appendChild(wrap);
+    wrap.appendChild(left);
+    wrap.appendChild(right);
+    left.style.left = "0";
+    left.style.top = "0.0354rem";
+    right.style.left = "0.5018rem";
+    right.style.top = "0";
+  }
+
+  function ensureExitButton() {
+    var reset = document.getElementById("35_473");
+    if (!reset || document.getElementById("vega-service-exit")) return;
+    var button = document.createElement("div");
+    button.id = "vega-service-exit";
+    button.style.cssText = "position:absolute;left:-5.6875rem;right:5.6875rem;width:9.375rem;height:3.3125rem;margin-left:auto;margin-right:auto;cursor:pointer;";
+    var face = document.createElement("div");
+    face.style.cssText = "position:absolute;inset:0;border-radius:0.875rem;background:#fff;border:0.125rem solid #000;box-sizing:border-box;";
+    var label = document.createElement("p");
+    label.textContent = "Выйти из сервисного режима";
+    label.style.cssText = "position:absolute;left:0.4rem;right:0.4rem;top:0.35rem;bottom:0.35rem;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:0.875rem;font-family:Roboto-Medium,sans-serif;font-weight:500;letter-spacing:0.0156rem;line-height:1.05rem;color:rgba(0,0,0,.8);";
+    button.appendChild(face);
+    button.appendChild(label);
+    reset.parentElement.appendChild(button);
+  }
+
+  function ensureProsthesisModeRow() {
+    var host = document.getElementById("35_468");
+    if (!host || document.getElementById("vega-mode-service")) return;
+    var row = document.createElement("p");
+    row.id = "vega-mode-service";
+    row.textContent = "Сервисный режим протеза";
+    row.style.cssText = "font-size:0.875rem;font-family:Roboto-Medium,sans-serif;font-weight:500;text-align:left;display:flex;flex-direction:column;justify-content:center;letter-spacing:0.0156rem;line-height:1.1rem;color:#000;width:19.25rem;height:1.75rem;position:absolute;left:1.1875rem;top:9.25rem;cursor:pointer;";
+    host.appendChild(row);
+  }
+
+  function exitServiceMode() {
+    sessionStorage.removeItem("vega-service");
+    if (window.location.hash === "#service") {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    layoutService();
+    [document.scrollingElement, document.documentElement, document.body].forEach(function (el) {
+      if (el && typeof el.scrollTo === "function") el.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function layoutService() {
+    var art = document.getElementById("35_244");
+    var title = document.getElementById("35_408");
+    var block = document.getElementById("35_410");
+    var dev = document.getElementById("35_468");
+    var bg = document.getElementById("35_458");
+    var reset = document.getElementById("35_473");
+    var header = document.getElementById("35_459");
+    var exitBtn = document.getElementById("vega-service-exit");
+    if (!art || !title || !block || !dev || !reset) return;
+    var authed = serviceUnlocked();
+    title.style.display = authed ? "" : "none";
+    block.style.display = authed ? "" : "none";
+    dev.style.display = authed ? "" : "none";
+    reset.style.display = authed ? "" : "none";
+    if (exitBtn) exitBtn.style.display = authed ? "" : "none";
+    if (!authed) {
+      art.style.height = "28rem";
+      return;
+    }
+    var collapse = devOpen ? 0 : 9;
+    var modeRow = document.getElementById("vega-mode-service");
+    dev.style.top = "76.625rem";
+    dev.style.height = (devOpen ? 11.625 : 2.625) + "rem";
+    dev.style.overflow = "hidden";
+    if (bg) bg.style.height = (devOpen ? 11.625 : 2.625) + "rem";
+    ["35_469", "35_470", "35_471"].forEach(function (id) {
+      var row = document.getElementById(id);
+      if (row) row.style.display = devOpen ? "" : "none";
+    });
+    if (modeRow) modeRow.style.display = devOpen ? "flex" : "none";
+    reset.style.top = (89.75 - collapse) + "rem";
+    if (exitBtn) exitBtn.style.top = (94.0625 - collapse) + "rem";
+    art.style.height = (108.25 - collapse) + "rem";
+    if (header) header.style.cursor = "pointer";
+    var chevron = document.getElementById("vega-dev-chevron");
+    if (chevron) chevron.style.transform = devOpen ? "" : "rotate(180deg)";
+    if (!serviceScrolled && window.location.hash === "#service") {
+      serviceScrolled = true;
+      window.setTimeout(function () {
+        title.scrollIntoView({ block: "start" });
+      }, 50);
+    }
+  }
+
+  function devHeaderHit(target) {
+    var header = document.getElementById("35_459");
+    return !!(header && header.contains(target));
+  }
+
+  function editorBar(target) {
+    var node = target;
+    while (node && node !== document.body) {
+      var style = node.getAttribute("style") || "";
+      if (style.indexOf("width: 18.25rem") !== -1 && style.indexOf("height: 2.625rem") !== -1 && style.indexOf("rgba(195, 222, 244") !== -1) {
+        var parent = node.parentElement;
+        var parentStyle = parent ? (parent.getAttribute("style") || "") : "";
+        if (parentStyle.indexOf("width: 18.25rem") !== -1 && parentStyle.indexOf("height: 2.625rem") !== -1) return parent;
+        return node;
+      }
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  function closeMenus() {
+    var menus = document.querySelectorAll("[data-vega-menu]");
+    for (var i = 0; i < menus.length; i++) {
+      var bar = menus[i].parentElement;
+      var card = bar && bar.parentElement;
+      if (card) card.style.zIndex = "";
+      var chev = bar && bar.querySelector("[data-vega-chevron]");
+      if (chev) chev.style.transform = "";
+      menus[i].remove();
+    }
+  }
+
+  function openFingerMenu(bar) {
+    var label = bar.querySelector("p");
+    var current = label ? normalize(label.textContent) : "";
+    var menu = document.createElement("div");
+    menu.setAttribute("data-vega-menu", "1");
+    menu.style.cssText = "position:absolute;left:0;right:0;top:calc(100% + 0.25rem);z-index:9;background:#fff;border-radius:0.625rem;box-shadow:0 0.35rem 1rem rgba(0,0,0,.18);overflow:hidden;";
+    FINGERS.forEach(function (name) {
+      var item = document.createElement("button");
+      item.type = "button";
+      item.textContent = name;
+      item.style.cssText = "display:block;width:100%;text-align:left;border:0;border-bottom:0.0625rem solid #eee;background:" + (name === current ? "rgba(195,222,244,.55)" : "#fff") + ";padding:0.7rem 0.875rem;font-size:0.875rem;font-family:Roboto-Medium,sans-serif;font-weight:500;color:#222;cursor:pointer;";
+      item.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (label) label.textContent = name;
+        closeMenus();
+      });
+      menu.appendChild(item);
+    });
+    bar.appendChild(menu);
+    if (bar.parentElement) bar.parentElement.style.zIndex = "8";
+    var chev = bar.querySelector("div[style*='height: 0.6661rem']");
+    if (chev) {
+      chev.setAttribute("data-vega-chevron", "1");
+      chev.style.transformOrigin = "center";
+      chev.style.transform = "rotate(180deg)";
+    }
+  }
+
+  function sideLabels(track) {
+    var card = track.parentElement;
+    if (!card) return [];
+    var trackRect = track.getBoundingClientRect();
+    var mid = trackRect.top + trackRect.height / 2;
+    var limit = 1.8 * rootPx();
+    var found = [];
+    var nodes = card.querySelectorAll("p");
+    for (var i = 0; i < nodes.length; i++) {
+      var text = normalize(nodes[i].textContent);
+      if (!text || text.length > 18) continue;
+      var rect = nodes[i].getBoundingClientRect();
+      if (Math.abs(rect.top + rect.height / 2 - mid) > limit) continue;
+      found.push(nodes[i]);
+    }
+    found.sort(function (a, b) {
+      return a.getBoundingClientRect().left - b.getBoundingClientRect().left;
+    });
+    return found.slice(0, 2);
+  }
+
+  function bindSwitches() {
+    var nodes = document.querySelectorAll("div");
+    for (var i = 0; i < nodes.length; i++) {
+      var style = nodes[i].getAttribute("style") || "";
+      if (style.indexOf("width: 3.3125rem") === -1 || style.indexOf("height: 1.75rem") === -1) continue;
+      var track = nodes[i];
+      var thumb = track.nextElementSibling;
+      if (!thumb) continue;
+      var thumbStyle = thumb.getAttribute("style") || "";
+      if (thumbStyle.indexOf("width: 1.25rem") === -1 || thumbStyle.indexOf("height: 1.25rem") === -1) continue;
+      bindSwitch(track, thumb);
+    }
+  }
+
+  function bindSwitch(track, thumb) {
+    var labels = sideLabels(track);
+    var drag = { moved: false, x: 0 };
+    track.style.cursor = "pointer";
+    track.style.touchAction = "none";
+    thumb.style.cursor = "pointer";
+    thumb.style.touchAction = "none";
+    thumb.style.zIndex = "2";
+
+    function paint(toRight) {
+      var active = "rgba(34, 34, 34, 1)";
+      var idle = "rgba(179, 172, 172, 1)";
+      if (labels[0]) labels[0].style.color = toRight ? idle : active;
+      if (labels[1]) labels[1].style.color = toRight ? active : idle;
+    }
+
+    function setSide(toRight) {
+      var parent = thumb.parentElement;
+      var parentRect = parent.getBoundingClientRect();
+      var trackRect = track.getBoundingClientRect();
+      var thumbRect = thumb.getBoundingClientRect();
+      var px = rootPx();
+      var pad = 0.12 * px;
+      var x = toRight ? trackRect.right - parentRect.left - thumbRect.width - pad : trackRect.left - parentRect.left + pad;
+      var y = thumbRect.top - parentRect.top;
+      thumb.dataset.vegaSide = toRight ? "right" : "left";
+      thumb.style.left = (x / px) + "rem";
+      thumb.style.right = "auto";
+      thumb.style.top = (y / px) + "rem";
+      thumb.style.bottom = "auto";
+      thumb.style.margin = "0";
+      paint(toRight);
+    }
+
+    setSide(false);
+    labels.forEach(function (label, index) {
+      label.style.cursor = "pointer";
+      label.addEventListener("click", function (event) {
+        event.stopPropagation();
+        setSide(index === 1);
+      });
+    });
+    thumb.addEventListener("pointerdown", function (event) {
+      drag.moved = false;
+      drag.x = event.clientX;
+      thumb.setPointerCapture(event.pointerId);
+    });
+    thumb.addEventListener("pointermove", function (event) {
+      if (!thumb.hasPointerCapture(event.pointerId)) return;
+      if (Math.abs(event.clientX - drag.x) > 4) drag.moved = true;
+      var rect = track.getBoundingClientRect();
+      setSide(event.clientX >= rect.left + rect.width / 2);
+    });
+    function toggle(event) {
+      event.stopPropagation();
+      if (drag.moved) {
+        drag.moved = false;
+        return;
+      }
+      setSide(thumb.dataset.vegaSide !== "right");
+    }
+    thumb.addEventListener("click", toggle);
+    track.addEventListener("click", function (event) {
+      if (event.target === thumb) return;
+      toggle(event);
+    });
+  }
+
+  function isCheckShell(el) {
+    if (!el || el.nodeType !== 1) return false;
+    var style = el.getAttribute("style") || "";
+    if (style.indexOf("width: 1.375rem") === -1 || style.indexOf("height: 1.375rem") === -1) return false;
+    if ((style + el.innerHTML).indexOf("border-radius: 0.5rem") === -1) return false;
+    return true;
+  }
+
+  function checkMark(shell) {
+    var ready = shell.querySelector("[data-vega-check]");
+    if (ready) return ready;
+    var scope = shell.parentElement || shell;
+    var nodes = scope.querySelectorAll("div");
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i] === shell) continue;
+      var style = nodes[i].getAttribute("style") || "";
+      var box = nodes[i].getBoundingClientRect();
+      var host = shell.getBoundingClientRect();
+      var near = shell.contains(nodes[i]) || Math.abs(box.left - host.left) < 12;
+      if (!near) continue;
+      if (style.indexOf("Rectangle19") !== -1 || (style.indexOf("width: 1rem") !== -1 && style.indexOf("55.451183") !== -1)) {
+        nodes[i].setAttribute("data-vega-check", "1");
+        return nodes[i];
+      }
+    }
+    var mark = document.createElement("div");
+    mark.setAttribute("data-vega-check", "1");
+    mark.style.cssText = "display:none;position:absolute;left:0.1875rem;top:0.1875rem;width:1rem;height:1rem;border-radius:0.375rem;background:rgb(55,90,118);border:0.125rem solid rgb(214,229,246);box-sizing:border-box;z-index:2;";
+    shell.appendChild(mark);
+    return mark;
+  }
+
+  function setChecked(shell, on) {
+    var mark = checkMark(shell);
+    mark.style.display = on ? "block" : "none";
+    shell.dataset.vegaChecked = on ? "1" : "0";
+    if (on) {
+      mark.classList.remove("vega-mark-in");
+      void mark.offsetWidth;
+      mark.classList.add("vega-mark-in");
+    }
+  }
+
+  function bindOneCheck(shell) {
+    var mark = checkMark(shell);
+    var shown = !!mark.getAttribute("style") && mark.style.display !== "none" && getComputedStyle(mark).display !== "none";
+    shell.dataset.vegaChecked = shown ? "1" : "0";
+    if (!shown) mark.style.display = "none";
+    var row = shell.parentElement;
+    var host = row && inRem(row.getBoundingClientRect()).h < 4 ? row : shell;
+    host.style.cursor = "pointer";
+    host.addEventListener("click", function (event) {
+      event.stopPropagation();
+      setChecked(shell, shell.dataset.vegaChecked !== "1");
+    });
+  }
+
+  function bindChecks() {
+    var nodes = document.querySelectorAll("div");
+    for (var i = 0; i < nodes.length; i++) {
+      if (!isCheckShell(nodes[i]) || isCheckShell(nodes[i].parentElement)) continue;
+      bindOneCheck(nodes[i]);
+    }
+  }
+
+  function paintChip(chip, on) {
+    var label = chip.querySelector("p");
+    if (!chip.dataset.vegaBg) {
+      chip.dataset.vegaBg = getComputedStyle(chip).backgroundColor;
+      if (label) chip.dataset.vegaColor = getComputedStyle(label).color;
+    }
+    chip.dataset.vegaOff = on ? "0" : "1";
+    if (on) {
+      var idle = (chip.dataset.vegaBg || "").indexOf("254") !== -1;
+      chip.style.backgroundColor = idle ? "rgb(55,90,118)" : chip.dataset.vegaBg;
+      if (label) label.style.color = idle ? "#fefefe" : chip.dataset.vegaColor;
+    } else {
+      chip.style.backgroundColor = "#e6e6e6";
+      if (label) label.style.color = "#888";
+    }
+    paintAxis();
+  }
+
+  function chipOn(id) {
+    var el = document.getElementById(id);
+    if (!el) return false;
+    if (el.dataset.vegaOff) return el.dataset.vegaOff !== "1";
+    return (el.getAttribute("style") || "").indexOf("254, 254, 254") === -1;
+  }
+
+  function paintAxis() {
+    var top = document.getElementById("34_806");
+    if (!top) return;
+    var max = chipOn("34_804") ? 10 : 5;
+    var mid = document.getElementById("34_808");
+    var bot = document.getElementById("34_807");
+    top.textContent = String(max);
+    if (mid) mid.textContent = String(max / 2);
+    if (bot) bot.textContent = "0";
+  }
+
+  function selectTime(name) {
+    var labels = document.querySelectorAll("p");
+    for (var i = 0; i < labels.length; i++) {
+      var text = normalize(labels[i].textContent);
+      if (text !== "5 сек" && text !== "10 сек" && text !== "30 сек") continue;
+      var chip = labels[i].parentElement;
+      if (!chip) continue;
+      var on = text === name;
+      chip.style.backgroundColor = on ? "rgb(55,90,118)" : "#fefefe";
+      labels[i].style.color = on ? "#fefefe" : "rgb(70,68,68)";
+    }
+  }
+
+  function chipOf(target) {
+    var node = target;
+    while (node && node !== document.body) {
+      var style = node.getAttribute("style") || "";
+      if (style.indexOf("height: 2.375rem") !== -1 && style.indexOf("width: 4.5625rem") !== -1 && style.indexOf("border-radius: 0.875rem") !== -1) return node;
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  function bindTrigger() {
+    var dot = document.getElementById("34_815");
+    if (!dot) return;
+    dot.style.backgroundImage = "none";
+    dot.style.backgroundColor = "rgb(180,180,180)";
+    dot.style.borderRadius = "50%";
+  }
+
+  function docCard(start) {
+    var node = start && start.nodeType === 1 ? start : start && start.parentElement;
+    while (node && node !== document.body) {
+      var style = node.getAttribute("style") || "";
+      if (style.indexOf("width: 6.125rem") !== -1 && style.indexOf("height: 10.625rem") !== -1) {
+        var text = normalize(node.innerText);
+        if (text.indexOf("О программе") !== -1 || text.indexOf("О протезах") !== -1) return node;
+      }
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  function bindDocCards() {
+    var nodes = document.querySelectorAll("div");
+    for (var i = 0; i < nodes.length; i++) {
+      if (docCard(nodes[i]) !== nodes[i]) continue;
+      nodes[i].style.cursor = "pointer";
+    }
+  }
+
+  function addProfileCard(start) {
+    var node = start && start.nodeType === 1 ? start : start && start.parentElement;
+    while (node && node !== document.body) {
+      var style = node.getAttribute("style") || "";
+      if (style.indexOf("width: 20rem") !== -1 && style.indexOf("height: 13.125rem") !== -1 && normalize(node.innerText).indexOf("Добавить профиль протеза") !== -1) return node;
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  var PRESS_LABELS = {
+    "Отмена": 1,
+    "Сохранить": 1,
+    "Вход": 1,
+    "Выйти из сервисного режима": 1,
+    "Загрузить схваты": 1,
+    "Сброс настроек": 1,
+    "Обновить настройки протеза": 1,
+    "Добавить документ": 1,
+    "Добавить профиль протеза": 1,
+    "5 сек": 1,
+    "10 сек": 1,
+    "30 сек": 1,
+    "MYO-1": 1,
+    "MYO-2": 1,
+    "АКБ": 1,
+    "Жест Коза": 1,
+    "Жест Джамбо": 1,
+    "Схват Ключа": 1,
+    "Список устройств": 1,
+    "Выбрать": 1,
+    "Отправить": 1,
+    "Пользовательский режим": 1,
+    "Сервисный режим протеза": 1,
+    "Персонализация": 1,
+    "Параметры устройств": 1,
+    "Параметры беспроводной связи": 1,
+    "Лицензионные соглашения": 1
+  };
+
+  function pencilOf(start) {
+    var node = start && start.nodeType === 1 ? start : start && start.parentElement;
+    while (node && node !== document.body) {
+      var style = node.getAttribute("style") || "";
+      if (style.indexOf("e27625e41c74b6e9f26c7b45f6bc05395977f62c") !== -1) {
+        var card = node.parentElement;
+        if (card && (card.id === "34_861" || card.id === "34_862")) return node;
+      }
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  function pencilSensor(pencil) {
+    var text = pencil && pencil.parentElement ? pencil.parentElement.innerText : "";
+    if (text.indexOf("MYO-2") !== -1) return "2";
+    if (text.indexOf("MYO-1") !== -1) return "1";
+    return "";
+  }
+
+  function bindPencils() {
+    ["34_834", "34_868"].forEach(function (id) {
+      var icon = document.getElementById(id);
+      if (icon) icon.style.cursor = "pointer";
+    });
+  }
+
+  function bindSettingsRows() {
+    var host = document.getElementById("35_395");
+    if (!host) return;
+    var rows = host.querySelectorAll("p");
+    for (var i = 0; i < rows.length; i++) rows[i].style.cursor = "pointer";
+  }
+
+  function headerIcon(start) {
+    var node = start && start.nodeType === 1 ? start : start && start.parentElement;
+    var shell = null;
+    var kind = "";
+    while (node && node !== document.body) {
+      var style = node.getAttribute("style") || "";
+      if (style.indexOf("048714f41f6a2ee43d002635a94f596ed8f94b7c") !== -1) kind = "ble";
+      if (style.indexOf("953999f3aefcce454ce665b5493f1ae4d5842efd") !== -1) kind = "bell";
+      if (style.indexOf("width: 3.125rem") !== -1 && style.indexOf("height: 3.1875rem") !== -1) shell = node;
+      node = node.parentElement;
+    }
+    return kind && shell ? shell : null;
+  }
+
+  function bindHeaderIcons() {
+    var nodes = document.querySelectorAll("div");
+    for (var i = 0; i < nodes.length; i++) {
+      var icon = headerIcon(nodes[i]);
+      if (icon) icon.style.cursor = "pointer";
+    }
+  }
+
+  function pressTarget(start) {
+    var node = start && start.nodeType === 1 ? start : start && start.parentElement;
+    var pencil = pencilOf(node);
+    if (pencil) return pencil;
+    var icon = headerIcon(node);
+    if (icon) return icon;
+    var card = docCard(node);
+    if (card) return card;
+    var profileCard = addProfileCard(node);
+    if (profileCard) return profileCard;
+    var best = null;
+    while (node && node !== document.body) {
+      if (node.hasAttribute && node.hasAttribute("data-vega-scrim")) return null;
+      if (node.id === "vega-stub") break;
+      if (isCheckShell(node) && !isCheckShell(node.parentElement)) return node;
+      if (node.getAttribute && node.getAttribute("data-vega-up") === "1") return node;
+      if (node.tagName === "BUTTON") return node;
+      var style = node.getAttribute("style") || "";
+      if (style.indexOf("pointer-events: none") !== -1) {
+        node = node.parentElement;
+        continue;
+      }
+      if (style.indexOf("width: 3.875rem") !== -1 && style.indexOf("height: 3.875rem") !== -1) return node;
+      if (style.indexOf("width: 3.625rem") !== -1 && style.indexOf("height: 3.625rem") !== -1) return node;
+      if (style.indexOf("width: 4.5625rem") !== -1 && style.indexOf("height: 2.375rem") !== -1) return node;
+      if (style.indexOf("width: 3.3125rem") !== -1 && style.indexOf("height: 1.75rem") !== -1) return node;
+      if (style.indexOf("width: 1.25rem") !== -1 && style.indexOf("height: 1.25rem") !== -1 && node.previousElementSibling) {
+        var prevStyle = node.previousElementSibling.getAttribute("style") || "";
+        if (prevStyle.indexOf("width: 3.3125rem") !== -1 && prevStyle.indexOf("height: 1.75rem") !== -1) return node.previousElementSibling;
+      }
+      if (node.id === "35_459") return node;
+      var box = inRem(node.getBoundingClientRect());
+      var text = normalize(node.innerText);
+      var known = (ROUTES[text] || PRESS_LABELS[text]) && box.w >= 1.2 && box.w <= 22.6 && box.h >= 1.2 && box.h <= 12;
+      var serviceRow = inServiceParams(node) && node.tagName === "P" && box.w >= 8 && box.h >= 1.2 && box.h <= 3;
+      if (known || serviceRow) best = node;
+      node = node.parentElement;
+    }
+    var bar = editorBar(start);
+    if (bar && (!best || bar.contains(best))) return best && best.tagName === "BUTTON" ? best : bar;
+    return best;
+  }
+
+  var pressedEl = null;
+
+  function releasePress() {
+    if (!pressedEl) return;
+    var el = pressedEl;
+    pressedEl = null;
+    el.classList.remove("is-down");
+    if (el.getAttribute("data-vega-press") === "check") {
+      el.classList.remove("is-pop");
+      void el.offsetWidth;
+      el.classList.add("is-pop");
+    }
+  }
+
+  document.addEventListener("pointerdown", function (event) {
+    if (event.button && event.button !== 0) return;
+    var el = pressTarget(event.target);
+    if (!el) return;
+    if (pressedEl && pressedEl !== el) pressedEl.classList.remove("is-down");
+    var kind = isCheckShell(el) ? "check" : "button";
+    el.setAttribute("data-vega-press", kind);
+    el.classList.add("is-down");
+    pressedEl = el;
+  }, true);
+
+  document.addEventListener("pointerup", releasePress, true);
+  document.addEventListener("pointercancel", releasePress, true);
+
+  scrim.addEventListener("click", hideOverlays);
+
+  document.addEventListener("click", function (event) {
+    if (event.target === scrim) return;
+    if (event.target && event.target.getAttribute && event.target.getAttribute("data-vega-number")) return;
+    if (event.target && (event.target.tagName === "SELECT" || event.target.tagName === "OPTION")) return;
+
+    var label = "";
+    var node = event.target;
+    while (node && node !== document.body) {
+      if (node.tagName === "P" || node.tagName === "SPAN") {
+        label = normalize(node.textContent);
+        if (label) break;
+      }
+      node = node.parentElement;
+    }
+
+    if (label === "Сохранить") {
+      if (editingParam) saveParam();
+      else hideOverlays();
+      return;
+    }
+
+    if (label === "Отправить") {
+      if (pendingMode) {
+        var mode = pendingMode;
+        pendingMode = "";
+        hideOverlays();
+        bleRequest({ cmd: "mode", mode: mode });
+        return;
+      }
+      if (editingSensor) {
+        var sensorField = document.querySelector("#vega-stub [data-vega-stub-field]");
+        var sensorValue = sensorField ? sensorField.value : "";
+        if (!sensorValue) return;
+        var sensor = editingSensor;
+        editingSensor = "";
+        hideOverlays();
+        bleRequest({ cmd: "set_k", sensor: Number(sensor), value: Number(sensorValue), k1: bleState.k1, k2: bleState.k2 });
+        return;
+      }
+      saveGripLoad();
+      editingParam = null;
+      hideOverlays();
+      return;
+    }
+
+    if (label === "Отмена") {
+      editingParam = null;
+      pendingMode = "";
+      editingSensor = "";
+      hideOverlays();
+      return;
+    }
+
+    if (label === "Вход") {
+      submitPassword();
+      return;
+    }
+
+    if (label === "Выйти из сервисного режима") {
+      exitServiceMode();
+      return;
+    }
+
+    if (label === "Добавить документ" || docCard(event.target) || headerIcon(event.target)) return;
+
+    if (label === "Добавить профиль протеза" || addProfileCard(event.target)) {
+      openDevicePicker();
+      return;
+    }
+
+    if (label === "Пользовательский режим") {
+      confirmMode("user");
+      return;
+    }
+
+    if (label === "Сервисный режим протеза") {
+      confirmMode("service");
+      return;
+    }
+
+    if (label === "Обновить настройки протеза") {
+      bleRequest({ cmd: "read_myo" });
+      return;
+    }
+
+    if (label === "Сброс настроек") {
+      resetParams();
+      return;
+    }
+
+    var paramRow = serviceParamRow(event.target);
+    if (paramRow) {
+      openParam(paramRow);
+      return;
+    }
+
+    var pencil = pencilOf(event.target);
+    if (pencil) {
+      var sensor = pencilSensor(pencil);
+      editingSensor = sensor;
+      pendingMode = "";
+      openStub(
+        "Чувствительность MYO датчика " + sensor,
+        "Введите значение параметра MYO-" + sensor,
+        "Пример: 0.4",
+        "Отправить",
+        "Диапазон значений: 0.0 ... 1.0",
+        true
+      );
+      return;
+    }
+
+    if (label === "Загрузить схваты") {
+      openGripLoad();
+      return;
+    }
+
+    if (label === "5 сек" || label === "10 сек" || label === "30 сек") {
+      selectTime(label);
+      return;
+    }
+
+    var chip = chipOf(event.target);
+    if (chip && (label === "MYO-1" || label === "MYO-2" || label === "АКБ")) {
+      if (!chip.dataset.vegaReady) {
+        chip.dataset.vegaReady = "1";
+        chip.dataset.vegaOff = (chip.getAttribute("style") || "").indexOf("254, 254, 254") !== -1 ? "1" : "0";
+      }
+      paintChip(chip, chip.dataset.vegaOff === "1");
+      return;
+    }
+
+    if (label === "Жест Коза" || label === "Жест Джамбо" || label === "Схват Ключа") {
+      var activeGrip = document.getElementById("34_230_0_1");
+      if (activeGrip) activeGrip.textContent = "Активный схват: " + label;
+      return;
+    }
+
+    if (devHeaderHit(event.target)) {
+      devOpen = !devOpen;
+      layoutService();
+      return;
+    }
+
+    var bar = editorBar(event.target);
+    if (bar) {
+      var hadMenu = !!bar.querySelector("[data-vega-menu]");
+      closeMenus();
+      if (!hadMenu) openFingerMenu(bar);
+      return;
+    }
+    closeMenus();
+
+    if (label === "Список устройств") return;
+
+    if (label === "Выбрать") {
+      hideOverlays();
+      return;
+    }
+
+    var file = findRoute(event.target);
+    if (file) {
+      go(file);
+      return;
+    }
+
+    if (isUpButton(event.target)) {
+      [document.scrollingElement, document.documentElement, document.body].forEach(function (el) {
+        if (el && typeof el.scrollTo === "function") el.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (isDeviceCard(event.target)) {
+      openSheet("Информация об устройстве");
+    }
+  });
+
+  initPassword();
+  wrapDevChevron();
+  ensureExitButton();
+  ensureProsthesisModeRow();
+  layoutService();
+  paintParamValues();
+  bleRequest({ cmd: "hello" });
+  function bindGripScroll() {
+    var row = document.getElementById("vega-grips");
+    if (!row) return;
+    var drag = { on: false, x: 0, left: 0, moved: false };
+    row.style.cursor = "grab";
+    row.addEventListener("pointerdown", function (event) {
+      if (event.pointerType && event.pointerType !== "mouse") return;
+      if (event.button && event.button !== 0) return;
+      drag.on = true;
+      drag.moved = false;
+      drag.x = event.clientX;
+      drag.left = row.scrollLeft;
+    });
+    row.addEventListener("pointermove", function (event) {
+      if (!drag.on) return;
+      var dx = event.clientX - drag.x;
+      if (Math.abs(dx) > 6) {
+        drag.moved = true;
+        row.style.cursor = "grabbing";
+        if (pressedEl && row.contains(pressedEl)) releasePress();
+      }
+      if (!drag.moved) return;
+      row.scrollLeft = drag.left - dx;
+    });
+    function endDrag() {
+      drag.on = false;
+      row.style.cursor = "grab";
+    }
+    row.addEventListener("pointerup", endDrag);
+    row.addEventListener("pointercancel", endDrag);
+    row.addEventListener("wheel", function (event) {
+      if (row.scrollWidth <= row.clientWidth + 1) return;
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      row.scrollLeft += event.deltaY;
+      event.preventDefault();
+    }, { passive: false });
+    row.addEventListener("click", function (event) {
+      if (!drag.moved) return;
+      event.stopPropagation();
+      event.preventDefault();
+      drag.moved = false;
+    }, true);
+  }
+
+  bindSwitches();
+  bindChecks();
+  bindDocCards();
+  var profileNodes = document.querySelectorAll("div");
+  for (var profileIndex = 0; profileIndex < profileNodes.length; profileIndex++) {
+    if (addProfileCard(profileNodes[profileIndex]) === profileNodes[profileIndex]) profileNodes[profileIndex].style.cursor = "pointer";
+  }
+  bindHeaderIcons();
+  bindTrigger();
+  bindPencils();
+  bindSettingsRows();
+  paintAxis();
+  bindGripScroll();
+  hideIconBesideNotification();
+  ensureUpButton();
+})();

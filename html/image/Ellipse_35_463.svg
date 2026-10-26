@@ -1,0 +1,22 @@
+<svg viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="12.000000" height="12.000000" fill="none" customFrame="#000000">
+	<defs>
+		<g id="pixso_custom_effect_7">
+			<effect visibility="visible" effectType="backgroundBlur" saturation="0" stdDeviation="4" />
+		</g>
+		<filter id="filter_7" width="12.000000" height="12.000000" x="0.000000" y="0.000000" filterUnits="userSpaceOnUse" customEffect="url(#pixso_custom_effect_7)" color-interpolation-filters="sRGB">
+			<feFlood flood-opacity="0" result="BackgroundImageFix" />
+			<feBlend result="shape" in="SourceGraphic" in2="BackgroundImageFix" mode="normal" />
+		</filter>
+		<clipPath id="outline_mask_1" transform="matrix(1,0,0,1,-0,-0)">
+			<path d="M6 12C2.68629 12 0 9.31371 0 6C0 2.68629 2.68629 0 6 0C9.31371 0 12 2.68629 12 6C12 9.31371 9.31371 12 6 12Z" fill="rgb(255,255,255)" fill-rule="evenodd" />
+		</clipPath>
+	</defs>
+	<g data-pixso-skip-parse="true">
+		<foreignObject width="12.000000" height="12.000000" x="0.000000" y="0.000000">
+			<div xmlns="http://www.w3.org/1999/xhtml" style="clip-path:url(#outline_mask_1);height:100%;backdrop-filter:blur(2.000000px);width:100%;-webkit-backdrop-filter:blur(2.000000px);" />
+		</foreignObject>
+	</g>
+	<g filter="url(#filter_7)">
+		<circle id="Значок статуса" cx="6" cy="6" r="6" fill="rgb(168,212,249)" />
+	</g>
+</svg>

@@ -1,0 +1,21 @@
+<svg viewBox="0 0 62 62" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="62.000000" height="62.000000" fill="none" customFrame="#000000">
+	<defs>
+		<g id="pixso_custom_effect_6">
+			<effect x="0.000000" y="4.000000" visibility="visible" fill="rgb(0,0,0)" fill-opacity="0.25" effectType="innerShadow" stdDeviation="4" radius="0" />
+		</g>
+		<filter id="filter_6" width="19.982788" height="22.006104" x="21.008606" y="20.493896" filterUnits="userSpaceOnUse" customEffect="url(#pixso_custom_effect_6)" color-interpolation-filters="sRGB">
+			<feFlood flood-opacity="0" result="BackgroundImageFix" />
+			<feBlend result="shape" in="SourceGraphic" in2="BackgroundImageFix" mode="normal" />
+			<feOffset dx="0.000000" dy="4.000000" in="SourceAlpha" />
+			<feGaussianBlur stdDeviation="1.33333337" />
+			<feComposite k2="-1" k3="1" in2="SourceAlpha" operator="arithmetic" />
+			<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0 " />
+			<feBlend result="effect_innerShadow_1" in2="shape" mode="normal" />
+		</filter>
+	</defs>
+	<rect id="Кнопка (вверх)" width="62.000000" height="62.000000" x="0.000000" y="0.000000" />
+	<circle id="Ellipse 13" cx="30.833334" cy="30.833334" r="23.833334" fill="rgb(51,51,51)" />
+	<g filter="url(#filter_6)">
+		<path id="Arrow 1" d="M0 -1.5L19 -1.5L19 1.5L0 1.5C-0.828427 1.5 -1.5 0.828427 -1.5 0C-1.5 -0.828427 -0.828427 -1.5 0 -1.5ZM0.02 1.48L0 1.5C-0.84 1.5 -1.5 0.84 -1.5 -0C-1.5 -0.84 -0.84 -1.5 0 -1.5L0.02 -1.48L0.02 1.48ZM16.8787 0L9.45406 -7.42462C8.86009 -8.01859 8.86009 -8.95197 9.45406 -9.54594C10.048 -10.1399 10.9814 -10.1399 11.5754 -9.54594L20.0607 -1.06066C20.6546 -0.466691 20.6546 0.466691 20.0607 1.06066L11.5754 9.54594C10.9814 10.1399 10.048 10.1399 9.45406 9.54594C8.86009 8.95197 8.86009 8.01859 9.45406 7.42462L16.8787 0Z" fill="rgb(254,254,254)" fill-rule="nonzero" transform="matrix(0,-1,1,0,31,41)" />
+	</g>
+</svg>

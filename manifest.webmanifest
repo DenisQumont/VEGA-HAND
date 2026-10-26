@@ -1,0 +1,14 @@
+{
+  "name": "VEGA ToolHand",
+  "short_name": "VEGA",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fefefe",
+  "theme_color": "#375a76",
+  "lang": "ru",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

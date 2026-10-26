@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Карта схватов</title>
+  <style>
+    @font-face {
+      font-family: "Roboto-Bold";
+      font-style: normal;
+      font-weight: 700;
+      src: url(font/Roboto-Bold_1.ttf) format(truetype);
+    }
+    @font-face {
+      font-family: "Roboto-Regular";
+      font-style: normal;
+      font-weight: 400;
+      src: url(font/Roboto-Regular_1.ttf) format(truetype);
+    }
+    @font-face {
+      font-family: "Roboto-Medium";
+      font-style: normal;
+      font-weight: 500;
+      src: url(font/Roboto-Medium_1.ttf) format(truetype);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100%;
+      background: #fefefe;
+      color: #222;
+    }
+    .screen {
+      width: 22.5rem;
+      margin: 0 auto;
+      padding: 1.25rem 1.25rem 5.25rem;
+    }
+    .logo {
+      width: 2.75rem;
+      height: 2.75rem;
+      background-image: url(./image/13b1723ea54643ea7dc01edf27018e703193c347.png);
+      background-size: cover;
+      background-position: center;
+    }
+    h1 {
+      margin-top: 1rem;
+      font-family: "Roboto-Bold", sans-serif;
+      font-size: 1.375rem;
+      font-weight: 700;
+      line-height: 1.375rem;
+    }
+    .stub {
+      margin-top: 1.25rem;
+      padding: 1rem 1.125rem;
+      border: 0.125rem solid #222;
+      border-radius: 0.875rem;
+    }
+    .stub p {
+      font-family: "Roboto-Medium", sans-serif;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      color: #222;
+    }
+    .stub p + p {
+      margin-top: 0.5rem;
+      font-family: "Roboto-Regular", sans-serif;
+      color: #8a8989;
+    }
+    .tabbar {
+      position: fixed;
+      z-index: 2;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 22.5rem;
+      height: 4.25rem;
+      margin: 0 auto;
+      background: #fefefe;
+      border-top: 0.0625rem solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+    }
+    .tab {
+      width: 3.625rem;
+      height: 3.625rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.15rem;
+    }
+    .tab img {
+      width: 1.875rem;
+      height: 1.875rem;
+      object-fit: contain;
+    }
+    .tab p {
+      font-family: "Roboto-Bold", sans-serif;
+      font-size: 0.625rem;
+      font-weight: 700;
+      line-height: 0.75rem;
+      text-align: center;
+    }
+  </style>
+  <link rel="stylesheet" href="fit.css?v=12">
+</head>
+<body>
+  <div class="screen">
+    <div class="logo"></div>
+    <h1>Карта схватов</h1>
+    <div class="stub">
+      <p>Экран в разработке</p>
+    </div>
+  </div>
+  <nav class="tabbar">
+    <div class="tab">
+      <img src="./image/8fc495b48b22a3b24d137e9856ccffec11cafee9.png" alt="">
+      <p>Главная</p>
+    </div>
+    <div class="tab">
+      <img src="./image/dfc33f884f27f504b4883caafb83b0f19bfb17c0.png" alt="">
+      <p>Контакты</p>
+    </div>
+    <div class="tab">
+      <img src="./image/34c780e9c192084ce4ad4061e3a387e41c2f881c.png" alt="">
+      <p>Мониторинг</p>
+    </div>
+    <div class="tab">
+      <img src="./image/6221b9cbaf8f17b28a732e1713ba222e21c4ffe9.png" alt="">
+      <p>Настройки</p>
+    </div>
+  </nav>
+  <script src="nav.js?v=29"></script>
+</body>
+</html>
