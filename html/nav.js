@@ -28,13 +28,12 @@
   var leaving = false;
 
   function go(file) {
-    leaving = true;
     if (file === "ProfileHandShacke.html" && !prosthesisConnected()) file = "AddProfile.html";
     if (window.parent !== window) {
       window.parent.postMessage({ type: "vega-nav", file: file }, "*");
       return;
     }
-    window.location.href = file;
+    showPage(file);
   }
 
   var bleState = { connected: false, bridge: false, mode: "", k1: 1, k2: 1, error: null };
@@ -324,7 +323,7 @@
           if (view) onBleEvent({ event: "info", bridge: "phone", battery: view.getUint8(0) });
         }).catch(function () {});
       }
-      if (phoneMyoRead) return readPhoneMyo();
+      if (phoneMyoRead) return readPhoneMyo().catch(function () {});
     }).then(function () {
       phoneJob = null;
     }, function (error) {
@@ -352,20 +351,20 @@
     return connectPhone(device, "hello").then(function () {
       phoneBusy = false;
     }, function (error) {
-      var drop = device.gatt && device.gatt.connected ? device.gatt.disconnect().catch(function () {}) : Promise.resolve();
-      return drop.then(function () {
-        if (left <= 1) {
-          phoneBusy = false;
-          throw error;
-        }
-        return phoneWait(800).then(function () { return connectWithRetry(device, left - 1); });
-      });
+      if (left <= 1) {
+        phoneBusy = false;
+        throw error;
+      }
+      return phoneWait(800).then(function () { return connectWithRetry(device, left - 1); });
     });
   }
 
   function resumePhone() {
+    if (phoneServer && phoneServer.connected) {
+      paintLink();
+      return;
+    }
     if (!navigator.bluetooth || !navigator.bluetooth.getDevices) return;
-    if (phoneServer && phoneServer.connected) return;
     if (resumeLock) return;
     var name = "протезу";
     try { name = localStorage.getItem("vega-device-name") || name; } catch (e) {}
@@ -484,7 +483,10 @@
         localStorage.setItem("vega-prosthesis", "1");
       } catch (e) {}
       toast("Подключение к " + (device.name || "протезу") + "…", 0);
-      go("ProfileHandShacke.html");
+      return connectPhone(device, "hello").then(function () {
+        hideToast();
+        go("ProfileHandShacke.html");
+      });
     }).catch(function (error) {
       if (error && (error.name === "NotFoundError" || error.name === "AbortError")) return;
       toast(phoneFailText(error), 12000);
@@ -592,15 +594,37 @@
     onBleEvent(event.data.payload);
   });
 
-  var sheets = Array.prototype.filter.call(document.querySelectorAll("div"), function (el) {
-    var style = el.getAttribute("style") || "";
-    return style.indexOf("display: none") !== -1 && style.indexOf("41.25rem") !== -1 && style.indexOf("bottom: 0") !== -1;
-  });
+  var sheets = [];
+  var valueDialog = null;
 
-  var valueDialog = Array.prototype.filter.call(document.querySelectorAll("div"), function (el) {
-    var style = el.getAttribute("style") || "";
-    return style.indexOf("display: none") !== -1 && (el.textContent || "").indexOf("Чувствительность MYO") !== -1;
-  })[0] || null;
+  function ensureRoot() {
+    var root = document.getElementById("vega-root");
+    if (root) return root;
+    root = document.createElement("div");
+    root.id = "vega-root";
+    var pending = Array.prototype.slice.call(document.body.childNodes);
+    document.body.appendChild(root);
+    pending.forEach(function (node) {
+      if (node.tagName === "SCRIPT") return;
+      root.appendChild(node);
+    });
+    return root;
+  }
+
+  function collectSheets() {
+    var scope = document.getElementById("vega-root") || document;
+    sheets = Array.prototype.filter.call(scope.querySelectorAll("div"), function (el) {
+      var style = el.getAttribute("style") || "";
+      return style.indexOf("display: none") !== -1 && style.indexOf("41.25rem") !== -1 && style.indexOf("bottom: 0") !== -1;
+    });
+    valueDialog = Array.prototype.filter.call(scope.querySelectorAll("div"), function (el) {
+      var style = el.getAttribute("style") || "";
+      return style.indexOf("display: none") !== -1 && (el.textContent || "").indexOf("Чувствительность MYO") !== -1;
+    })[0] || null;
+  }
+
+  ensureRoot();
+  collectSheets();
 
   var scrim = document.createElement("div");
   scrim.setAttribute("data-vega-scrim", "1");
@@ -1970,12 +1994,76 @@
     }
   });
 
-  initPassword();
-  wrapDevChevron();
-  ensureExitButton();
-  ensureProsthesisModeRow();
-  layoutService();
-  paintParamValues();
+  function mountPage() {
+    collectSheets();
+    initPassword();
+    wrapDevChevron();
+    ensureExitButton();
+    ensureProsthesisModeRow();
+    layoutService();
+    paintParamValues();
+    bindSwitches();
+    bindChecks();
+    bindDocCards();
+    var profileNodes = document.querySelectorAll("#vega-root div");
+    for (var profileIndex = 0; profileIndex < profileNodes.length; profileIndex++) {
+      if (addProfileCard(profileNodes[profileIndex]) === profileNodes[profileIndex]) profileNodes[profileIndex].style.cursor = "pointer";
+    }
+    bindHeaderIcons();
+    bindTrigger();
+    bindPencils();
+    bindSettingsRows();
+    paintAxis();
+    bindGripScroll();
+    hideIconBesideNotification();
+    ensureUpButton();
+    paintLink();
+  }
+
+  var pageQuiet = false;
+
+  function showPage(file) {
+    return fetch(file, { cache: "no-store" }).then(function (response) {
+      if (!response.ok) throw new Error("Не удалось открыть экран");
+      return response.text();
+    }).then(function (html) {
+      var parsed = new DOMParser().parseFromString(html, "text/html");
+      var blocks = document.head.querySelectorAll("style:not(#vega-page-style)");
+      for (var i = 0; i < blocks.length; i++) blocks[i].parentNode.removeChild(blocks[i]);
+      var styleHost = document.getElementById("vega-page-style");
+      if (!styleHost) {
+        styleHost = document.createElement("style");
+        styleHost.id = "vega-page-style";
+        document.head.appendChild(styleHost);
+      }
+      var css = "";
+      var incoming = parsed.querySelectorAll("style");
+      for (var s = 0; s < incoming.length; s++) css += incoming[s].textContent;
+      styleHost.textContent = css;
+      if (!pageQuiet && location.pathname.split("/").pop() !== file) history.pushState({ vega: file }, "", file);
+      var root = ensureRoot();
+      root.innerHTML = "";
+      var nodes = parsed.body.childNodes;
+      for (var n = 0; n < nodes.length; n++) {
+        if (nodes[n].tagName === "SCRIPT") continue;
+        root.appendChild(document.importNode(nodes[n], true));
+      }
+      document.title = parsed.title || document.title;
+      document.body.scrollTop = 0;
+      mountPage();
+    }).catch(function (error) {
+      toast(error && error.message ? error.message : "Не удалось открыть экран", 8000);
+    });
+  }
+
+  window.addEventListener("popstate", function () {
+    var name = location.pathname.split("/").pop();
+    if (!name || name.indexOf(".html") === -1) return;
+    pageQuiet = true;
+    showPage(name).then(function () { pageQuiet = false; }, function () { pageQuiet = false; });
+  });
+
+  mountPage();
   try {
     var savedBleError = sessionStorage.getItem("vega-ble-error");
     if (savedBleError) {
@@ -2027,20 +2115,4 @@
       drag.moved = false;
     }, true);
   }
-
-  bindSwitches();
-  bindChecks();
-  bindDocCards();
-  var profileNodes = document.querySelectorAll("div");
-  for (var profileIndex = 0; profileIndex < profileNodes.length; profileIndex++) {
-    if (addProfileCard(profileNodes[profileIndex]) === profileNodes[profileIndex]) profileNodes[profileIndex].style.cursor = "pointer";
-  }
-  bindHeaderIcons();
-  bindTrigger();
-  bindPencils();
-  bindSettingsRows();
-  paintAxis();
-  bindGripScroll();
-  hideIconBesideNotification();
-  ensureUpButton();
 })();
