@@ -4,6 +4,12 @@
     return;
   }
 
+  if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      for (var i = 0; i < regs.length; i++) regs[i].unregister();
+    }).catch(function () {});
+  }
+
   var ROUTES = {
     "Главная": "ProfileHandShacke.html",
     "Контакты": "Contact.html",
@@ -283,6 +289,7 @@
 
   function connectPhone(device, reason) {
     if (phoneJob) return phoneJob;
+    window.__vegaBleDevice = device;
     phoneJob = device.gatt.connect().then(function (server) {
       phoneServer = server;
       device.ongattserverdisconnected = onPhoneDrop;
@@ -370,12 +377,12 @@
   function resumePhone() {
     if (phoneServer && phoneServer.connected) {
       paintLink();
-      if (/AddProfile\.html$/.test(location.pathname)) go("ProfileHandShacke.html");
+      if (screenName === "AddProfile.html") go("ProfileHandShacke.html");
       return;
     }
     if (!navigator.bluetooth || !navigator.bluetooth.getDevices) {
       forgetPhone();
-      if (/ProfileHandShacke\.html$/.test(location.pathname)) go("AddProfile.html");
+      if (screenName === "ProfileHandShacke.html") go("AddProfile.html");
       return;
     }
     if (resumeLock) return;
@@ -387,12 +394,12 @@
       return connectWithRetry(device, 4);
     }).then(function () {
       hideToast();
-      if (/AddProfile\.html$/.test(location.pathname)) go("ProfileHandShacke.html");
+      if (screenName === "AddProfile.html") go("ProfileHandShacke.html");
     }, function (error) {
       var text = phoneFailText(error);
       try { sessionStorage.setItem("vega-ble-error", text); } catch (e) {}
       forgetPhone();
-      if (/ProfileHandShacke\.html$/.test(location.pathname)) go("AddProfile.html");
+      if (screenName === "ProfileHandShacke.html") go("AddProfile.html");
       else toast(text, 12000);
     });
     resumeLock.then(function () { resumeLock = null; }, function () { resumeLock = null; });
@@ -534,7 +541,7 @@
       } catch (e) {}
       paintLink();
       if (payload.connected) hideToast();
-      if (!payload.connected && payload.reason === "disconnect" && /ProfileHandShacke\.html$/.test(location.pathname)) {
+      if (!payload.connected && payload.reason === "disconnect" && screenName === "ProfileHandShacke.html") {
         go("AddProfile.html");
       }
       if (payload.reason === "hello" && !payload.bridge) {
@@ -2033,6 +2040,7 @@
   }
 
   var pageQuiet = false;
+  var screenName = location.pathname.split("/").pop() || "";
 
   function showPage(file) {
     return fetch(file, { cache: "no-store" }).then(function (response) {
@@ -2052,7 +2060,7 @@
       var incoming = parsed.querySelectorAll("style");
       for (var s = 0; s < incoming.length; s++) css += incoming[s].textContent;
       styleHost.textContent = css;
-      if (!pageQuiet && location.pathname.split("/").pop() !== file) history.pushState({ vega: file }, "", file);
+      screenName = file;
       var root = ensureRoot();
       root.innerHTML = "";
       var nodes = parsed.body.childNodes;
