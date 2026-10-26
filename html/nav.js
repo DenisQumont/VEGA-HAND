@@ -68,7 +68,7 @@
     localSocket.send(JSON.stringify(payload));
   }
 
-  function toast(text) {
+  function toast(text, ms) {
     if (!text) return;
     var el = document.getElementById("vega-toast");
     if (!el) {
@@ -80,7 +80,14 @@
     el.textContent = text;
     el.style.display = "block";
     window.clearTimeout(el._timer);
-    el._timer = window.setTimeout(function () { el.style.display = "none"; }, 3600);
+    if (ms !== 0) el._timer = window.setTimeout(function () { el.style.display = "none"; }, ms || 3600);
+  }
+
+  function hideToast() {
+    var el = document.getElementById("vega-toast");
+    if (!el) return;
+    window.clearTimeout(el._timer);
+    el.style.display = "none";
   }
 
   function paintLink() {
@@ -171,6 +178,8 @@
   var phoneMyoWrite = null;
   var phoneTelemetry = null;
   var phoneJob = null;
+  var phoneBusy = false;
+  var resumeLock = null;
 
   function phoneErrorText(code) {
     var names = { 1: "Нет связи с контроллером протеза", 2: "Нет связи BLE", 6: "Неисправность аккумулятора", 7: "Неисправность миодатчика 1", 8: "Неисправность миодатчика 2", 84: "Неисправны оба миодатчика" };
@@ -236,8 +245,20 @@
     return view.buffer;
   }
 
+  function phoneWait(ms) {
+    return new Promise(function (resolve) { window.setTimeout(resolve, ms); });
+  }
+
+  function phoneFailText(error) {
+    var name = error && error.name || "";
+    if (name === "NetworkError" || name === "NotSupportedError" || name === "NotFoundError") {
+      return "Телефон не смог подключиться. Если появится запрос PIN, введите PIN протеза. Заводской PIN — 123456, если его не меняли.";
+    }
+    return (error && error.message) || "Не удалось подключиться к протезу";
+  }
+
   function onPhoneDrop() {
-    if (leaving) return;
+    if (leaving || phoneBusy) return;
     phoneServer = null;
     phoneInput = null;
     try {
@@ -252,7 +273,7 @@
     if (phoneJob) return phoneJob;
     phoneJob = device.gatt.connect().then(function (server) {
       phoneServer = server;
-      device.addEventListener("gattserverdisconnected", onPhoneDrop);
+      device.ongattserverdisconnected = onPhoneDrop;
       return server.getPrimaryService(PHONE_SERVICE);
     }).then(function (service) {
       return Promise.all([
@@ -291,6 +312,13 @@
         var text = new TextDecoder("utf-8").decode(bytes).replace(/\0[\s\S]*/, "").trim();
         onBleEvent({ event: "info", bridge: "phone", serial: text });
       }
+      if (phoneServer && phoneServer.getPrimaryService) {
+        phoneServer.getPrimaryService("battery_service").then(function (service) {
+          return service.getCharacteristic("battery_level").then(function (char) { return char.readValue(); });
+        }).then(function (view) {
+          if (view) onBleEvent({ event: "info", bridge: "phone", battery: view.getUint8(0) });
+        }).catch(function () {});
+      }
       if (phoneMyoRead) return readPhoneMyo();
     }).then(function () {
       phoneJob = null;
@@ -301,29 +329,58 @@
     return phoneJob;
   }
 
-  function resumePhone() {
-    if (!navigator.bluetooth || !navigator.bluetooth.getDevices) return;
-    if (phoneServer && phoneServer.connected) return;
+  function findPhoneDevice(attempt) {
     var id = "";
     try { id = localStorage.getItem("vega-device-id") || ""; } catch (e) {}
-    navigator.bluetooth.getDevices().then(function (devices) {
+    return navigator.bluetooth.getDevices().then(function (devices) {
       var device = null;
       for (var i = 0; i < devices.length; i++) {
         if (!id || devices[i].id === id) { device = devices[i]; break; }
       }
-      if (!device) {
-        try {
-          localStorage.removeItem("vega-prosthesis");
-          localStorage.removeItem("vega-ble");
-          localStorage.removeItem("vega-device-id");
-        } catch (e) {}
-        if (/ProfileHandShacke\.html$/.test(location.pathname)) go("AddProfile.html");
-        return null;
-      }
-      return connectPhone(device, "hello");
-    }).catch(function (error) {
-      toast(error && error.message ? error.message : "Не удалось восстановить связь с протезом");
+      if (device || attempt >= 5) return device;
+      return phoneWait(400).then(function () { return findPhoneDevice(attempt + 1); });
     });
+  }
+
+  function connectWithRetry(device, left) {
+    phoneBusy = true;
+    return connectPhone(device, "hello").then(function () {
+      phoneBusy = false;
+    }, function (error) {
+      var drop = device.gatt && device.gatt.connected ? device.gatt.disconnect().catch(function () {}) : Promise.resolve();
+      return drop.then(function () {
+        if (left <= 1) {
+          phoneBusy = false;
+          throw error;
+        }
+        return phoneWait(800).then(function () { return connectWithRetry(device, left - 1); });
+      });
+    });
+  }
+
+  function resumePhone() {
+    if (!navigator.bluetooth || !navigator.bluetooth.getDevices) return;
+    if (phoneServer && phoneServer.connected) return;
+    if (resumeLock) return;
+    var name = "протезу";
+    try { name = localStorage.getItem("vega-device-name") || name; } catch (e) {}
+    toast("Подключение к " + name + "… Если система спросит PIN, введите PIN протеза.", 0);
+    resumeLock = findPhoneDevice(0).then(function (device) {
+      if (!device) throw new Error("Телефон не запомнил выбранный протез. Выберите его ещё раз.");
+      return connectWithRetry(device, 4);
+    }).then(function () {
+      hideToast();
+    }, function (error) {
+      var text = phoneFailText(error);
+      try {
+        sessionStorage.setItem("vega-ble-error", text);
+        localStorage.removeItem("vega-prosthesis");
+        localStorage.removeItem("vega-ble");
+      } catch (e) {}
+      if (/ProfileHandShacke\.html$/.test(location.pathname)) go("AddProfile.html");
+      else toast(text, 12000);
+    });
+    resumeLock.then(function () { resumeLock = null; }, function () { resumeLock = null; });
   }
 
   function writePhone(char, data) {
@@ -408,17 +465,11 @@
         localStorage.setItem("vega-ble", "phone");
         localStorage.setItem("vega-prosthesis", "1");
       } catch (e) {}
-      return connectPhone(device, "connect").catch(function (error) {
-        try {
-          localStorage.removeItem("vega-prosthesis");
-          localStorage.removeItem("vega-ble");
-          localStorage.removeItem("vega-device-id");
-        } catch (e) {}
-        throw error;
-      });
+      toast("Подключение к " + (device.name || "протезу") + "…", 0);
+      go("ProfileHandShacke.html");
     }).catch(function (error) {
       if (!error || error.name === "NotFoundError" || error.name === "NotAllowedError") return;
-      toast(error.message || "Не удалось подключиться к протезу");
+      toast(phoneFailText(error), 12000);
     });
   }
 
@@ -450,10 +501,7 @@
         else if (payload.reason === "disconnect") localStorage.removeItem("vega-prosthesis");
       } catch (e) {}
       paintLink();
-      if (payload.connected && payload.reason === "connect") {
-        hideOverlays();
-        go("ProfileHandShacke.html");
-      }
+      if (payload.connected) hideToast();
       if (!payload.connected && payload.reason === "disconnect" && /ProfileHandShacke\.html$/.test(location.pathname)) {
         go("AddProfile.html");
       }
@@ -481,7 +529,9 @@
         bleState.error = payload.error;
         if (payload.errorText) toast(payload.errorText);
       }
-      if (payload.lowBattery && !bleState.lowBattery) toast("Протез разряжен");
+      if (payload.lowBattery && !bleState.lowBattery) toast("Протез разряжен", 8000);
+      var connecting = document.getElementById("vega-toast");
+      if (connecting && connecting.textContent.indexOf("Подключение") === 0) hideToast();
       bleState.lowBattery = !!payload.lowBattery;
       paintLink();
       return;
@@ -1908,6 +1958,13 @@
   ensureProsthesisModeRow();
   layoutService();
   paintParamValues();
+  try {
+    var savedBleError = sessionStorage.getItem("vega-ble-error");
+    if (savedBleError) {
+      sessionStorage.removeItem("vega-ble-error");
+      toast(savedBleError, 12000);
+    }
+  } catch (e) {}
   bleRequest({ cmd: "hello" });
   function bindGripScroll() {
     var row = document.getElementById("vega-grips");
