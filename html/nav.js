@@ -982,10 +982,103 @@
 
   var scrim = document.createElement("div");
   scrim.setAttribute("data-vega-scrim", "1");
-  scrim.style.cssText = "display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:4;";
+  scrim.style.cssText = "display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40;";
   document.body.appendChild(scrim);
 
   var stubDialog = null;
+  var overlayScrollLock = null;
+
+  function findTabBars() {
+    var bars = [];
+    var nodes = document.querySelectorAll("div");
+    for (var i = 0; i < nodes.length; i++) {
+      var style = nodes[i].getAttribute("style") || "";
+      if (style.indexOf("position: fixed") === -1 && style.indexOf("position:fixed") === -1) continue;
+      if (style.indexOf("bottom: 0") === -1 && style.indexOf("bottom:0") === -1) continue;
+      if (style.indexOf("height: 4.25rem") === -1) continue;
+      bars.push(nodes[i]);
+    }
+    return bars;
+  }
+
+  function setTabBarsHidden(hidden) {
+    findTabBars().forEach(function (bar) {
+      if (hidden) {
+        if (!bar.dataset.vegaPrevVis) bar.dataset.vegaPrevVis = bar.style.visibility || "";
+        if (!bar.dataset.vegaPrevDisp) bar.dataset.vegaPrevDisp = bar.style.display || "";
+        bar.style.visibility = "hidden";
+        bar.style.pointerEvents = "none";
+      } else {
+        bar.style.visibility = bar.dataset.vegaPrevVis || "";
+        bar.style.display = bar.dataset.vegaPrevDisp || "";
+        bar.style.pointerEvents = "";
+        delete bar.dataset.vegaPrevVis;
+        delete bar.dataset.vegaPrevDisp;
+      }
+    });
+  }
+
+  function lockOverlayScroll() {
+    if (overlayScrollLock) return;
+    var y = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    overlayScrollLock = { y: y };
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = "-" + y + "px";
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+  }
+
+  function unlockOverlayScroll() {
+    if (!overlayScrollLock) return;
+    var y = overlayScrollLock.y || 0;
+    overlayScrollLock = null;
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    window.scrollTo(0, y);
+  }
+
+  function placeStubInViewport(dialog) {
+    if (!dialog) return;
+    var view = window.visualViewport;
+    var vh = view && view.height ? view.height : (window.innerHeight || document.documentElement.clientHeight);
+    var offsetTop = view && view.offsetTop ? view.offsetTop : 0;
+    var dialogH = dialog.getBoundingClientRect().height || (18.75 * rootPx());
+    var gap = Math.max(12, Math.round(0.75 * rootPx()));
+    var bottomPad = Math.max(gap, (window.innerHeight || vh) - offsetTop - vh + gap);
+    // Держим форму в видимой области над клавиатурой, без сдвига страницы.
+    dialog.style.top = "auto";
+    dialog.style.bottom = bottomPad + "px";
+    var avail = vh - gap * 2;
+    if (dialogH > avail && avail > 80) {
+      dialog.style.transformOrigin = "center bottom";
+      dialog.style.transform = "scale(" + Math.max(0.55, avail / dialogH).toFixed(3) + ")";
+    } else {
+      dialog.style.transform = "none";
+    }
+  }
+
+  function bindStubViewport() {
+    if (window.__vegaStubViewportBound) return;
+    window.__vegaStubViewportBound = true;
+    function sync() {
+      if (!stubDialog || stubDialog.style.display === "none") return;
+      placeStubInViewport(stubDialog);
+      if (overlayScrollLock) window.scrollTo(0, 0);
+    }
+    window.addEventListener("resize", sync);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", sync);
+      window.visualViewport.addEventListener("scroll", sync);
+    }
+  }
 
   function hideOverlays() {
     sheets.forEach(function (el) {
@@ -999,6 +1092,8 @@
     if (devices) devices.style.display = "none";
     scrim.style.display = "none";
     scrim.style.opacity = "";
+    setTabBarsHidden(false);
+    unlockOverlayScroll();
   }
 
   function fitAdvancedSettingsButton() {
@@ -1314,12 +1409,43 @@
     return out;
   }
 
+  // Формат миокоэффициента: X.Y (одна цифра, точка, одна цифра), 0.0 ... 1.0
+  function cleanMyoKInput(value) {
+    var text = String(value || "").replace(/,/g, ".");
+    var out = "";
+    var dot = false;
+    var before = 0;
+    var after = 0;
+    for (var i = 0; i < text.length; i++) {
+      var ch = text.charAt(i);
+      if (ch >= "0" && ch <= "9") {
+        if (!dot) {
+          if (before >= 1) continue;
+          before += 1;
+          out += ch;
+        } else {
+          if (after >= 1) continue;
+          after += 1;
+          out += ch;
+        }
+      } else if (ch === "." && !dot && before === 1) {
+        dot = true;
+        out += ch;
+      }
+    }
+    return out;
+  }
+
   function withinSensitivity(text) {
     if (text === "" || text === ".") return true;
-    var body = text.charAt(text.length - 1) === "." ? text.slice(0, -1) : text;
-    if (body === "") return true;
-    var value = parseFloat(body);
+    if (!/^\d\.?\d?$/.test(text)) return false;
+    if (text.charAt(text.length - 1) === ".") return text.charAt(0) === "0" || text.charAt(0) === "1";
+    var value = parseFloat(text);
     return !isNaN(value) && value >= 0 && value <= 1;
+  }
+
+  function isMyoKFormat(text) {
+    return /^\d\.\d$/.test(String(text || "")) && withinSensitivity(text);
   }
 
   function cleanUint(text) {
@@ -1355,11 +1481,11 @@
         if (cleanUint(raw) === null) event.preventDefault();
         return;
       }
-      if (!withinSensitivity(digitsOnly(raw))) event.preventDefault();
+      if (!withinSensitivity(cleanMyoKInput(raw))) event.preventDefault();
     });
     input.addEventListener("input", function () {
       var integer = currentMode() === "u16";
-      var next = integer ? cleanUint(input.value) : digitsOnly(input.value);
+      var next = integer ? cleanUint(input.value) : cleanMyoKInput(input.value);
       if (next === null || (!integer && !withinSensitivity(next))) next = input.dataset.vegaLast || "";
       if (input.value !== next) {
         var pos = input.selectionStart || next.length;
@@ -1393,19 +1519,28 @@
     field.value = "";
     field.placeholder = hintText;
     field.inputMode = mode === "u16" ? "numeric" : "decimal";
+    field.setAttribute("enterkeyhint", "done");
+    field.setAttribute("autocapitalize", "off");
+    field.setAttribute("autocorrect", "off");
+    field.setAttribute("spellcheck", "false");
     if (mode) bindNumeric(field, mode);
     sheets.forEach(function (el) { el.style.display = "none"; });
     if (valueDialog) valueDialog.style.display = "none";
-    pinOverlay(dialog, "4.5rem");
-    dialog.style.zIndex = "6";
+    setTabBarsHidden(true);
+    lockOverlayScroll();
+    bindStubViewport();
+    pinOverlay(dialog, "0.75rem");
+    dialog.style.zIndex = "50";
+    scrim.style.zIndex = "40";
     dialog.style.transform = "none";
-    var avail = (window.innerHeight || document.documentElement.clientHeight) - 5.2 * rootPx();
-    var needed = 18.75 * rootPx();
-    if (needed > avail && avail > 80) {
-      dialog.style.transformOrigin = "center bottom";
-      dialog.style.transform = "scale(" + Math.max(0.55, avail / needed).toFixed(3) + ")";
+    placeStubInViewport(dialog);
+    if (mode) {
+      window.setTimeout(function () {
+        placeStubInViewport(dialog);
+        try { field.focus({ preventScroll: true }); } catch (e) { try { field.focus(); } catch (e2) {} }
+        if (overlayScrollLock) window.scrollTo(0, 0);
+      }, 0);
     }
-    if (mode) window.setTimeout(function () { field.focus(); }, 0);
     return dialog;
   }
 
@@ -2132,7 +2267,7 @@
   }
 
   function chartMaxVolt() {
-    return chipOn("34_804") ? 10 : 5;
+    return chipOn("34_804") ? 9 : 5;
   }
 
   function clearAxisLabels(kind) {
@@ -2283,17 +2418,24 @@
     openStub(
       "Чувствительность MYO датчика " + sensor,
       "Введите значение параметра MYO-" + sensor,
-      "Пример: 0.4",
+      "Формат: 0.4",
       "Отправить",
-      "Диапазон значений: 0.0 ... 1.0",
+      "Формат: цифра.цифра (0.0 ... 1.0)",
       true
     );
     var field = document.querySelector("#vega-stub [data-vega-stub-field]");
     if (field) {
       var current = sensor === "1" ? bleState.k1 : bleState.k2;
-      if (current != null) field.value = formatMyoK(current);
+      if (current != null) {
+        field.value = formatMyoK(current);
+        field.dataset.vegaLast = field.value;
+      }
       window.setTimeout(function () {
-        try { field.focus(); field.select(); } catch (e) {}
+        placeStubInViewport(document.getElementById("vega-stub"));
+        try { field.focus({ preventScroll: true }); field.select(); } catch (e) {
+          try { field.focus(); field.select(); } catch (e2) {}
+        }
+        if (overlayScrollLock) window.scrollTo(0, 0);
       }, 40);
     }
   }
@@ -2679,13 +2821,12 @@
       }
       if (editingSensor) {
         var sensorField = document.querySelector("#vega-stub [data-vega-stub-field]");
-        var sensorValue = sensorField ? String(sensorField.value).trim().replace(",", ".") : "";
-        var parsedK = Number(sensorValue);
-        if (!sensorValue || isNaN(parsedK) || parsedK < 0 || parsedK > 1) {
-          toast("Введите значение от 0.0 до 1.0");
+        var sensorValue = sensorField ? cleanMyoKInput(String(sensorField.value).trim()) : "";
+        if (!isMyoKFormat(sensorValue)) {
+          toast("Формат: цифра.цифра (например 0.4)");
           return;
         }
-        parsedK = Math.round(parsedK * 10) / 10;
+        var parsedK = Math.round(Number(sensorValue) * 10) / 10;
         var sensor = editingSensor;
         editingSensor = "";
         hideOverlays();
