@@ -200,20 +200,11 @@
     var monitorGrip = document.getElementById("34_826");
     if (monitorGrip) {
       monitorGrip.style.whiteSpace = "nowrap";
-      monitorGrip.style.lineHeight = "1.25rem";
-      monitorGrip.style.textAlign = "right";
       monitorGrip.style.overflow = "hidden";
-      monitorGrip.style.transformOrigin = "right center";
+      monitorGrip.style.textOverflow = "ellipsis";
       monitorGrip.style.transform = "none";
+      monitorGrip.style.zIndex = "5";
       monitorGrip.textContent = bleState.grip + " · " + gripLabel;
-      window.requestAnimationFrame(function () {
-        if (!monitorGrip.isConnected) return;
-        var avail = monitorGrip.clientWidth || 0;
-        var need = monitorGrip.scrollWidth;
-        if (avail > 0 && need > avail) {
-          monitorGrip.style.transform = "scaleX(" + (avail / need) + ")";
-        }
-      });
     }
   }
 
@@ -2089,30 +2080,80 @@
 
   var chartWindowSec = 10;
   var TIME_AXIS_IDS = ["34_809", "34_810", "34_811", "34_812", "34_813", "34_814", "34_816"];
+  var VOLT_AXIS_IDS = ["34_806", "34_807", "34_808"];
+
+  function chartHost() {
+    return document.getElementById("34_859");
+  }
+
+  function clearAxisLabels(kind) {
+    var host = chartHost();
+    if (!host) return;
+    var nodes = host.querySelectorAll("[data-vega-axis='" + kind + "']");
+    for (var i = 0; i < nodes.length; i++) nodes[i].parentNode.removeChild(nodes[i]);
+  }
+
+  function hideStockAxis(ids) {
+    ids.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.visibility = "hidden";
+    });
+  }
+
+  function axisLabelStyle(leftRem, topRem) {
+    return "position:absolute;left:" + leftRem + "rem;top:" + topRem + "rem;width:2.1rem;height:1.25rem;margin:0;font-size:0.75rem;font-family:Roboto-Bold,sans-serif;font-weight:700;line-height:1.25rem;color:rgb(114,111,111);z-index:3;pointer-events:none;";
+  }
 
   function paintAxis() {
-    var top = document.getElementById("34_806");
-    if (!top) return;
-    var max = chipOn("34_804") ? 10 : 5;
-    var mid = document.getElementById("34_808");
-    var bot = document.getElementById("34_807");
-    top.textContent = String(max);
-    if (mid) mid.textContent = String(max / 2);
-    if (bot) bot.textContent = "0";
+    if (!chartHost()) return;
+    hideStockAxis(TIME_AXIS_IDS);
+    hideStockAxis(VOLT_AXIS_IDS);
+    paintVoltAxis();
     paintTimeAxis(chartWindowSec);
   }
 
+  function paintVoltAxis() {
+    var host = chartHost();
+    if (!host) return;
+    clearAxisLabels("volt");
+    var maxV = chipOn("34_804") ? 10 : 5;
+    var topY = 1.25;
+    var botY = 14.5625;
+    var span = botY - topY;
+    for (var v = 0; v <= maxV; v++) {
+      var el = document.createElement("p");
+      el.setAttribute("data-vega-axis", "volt");
+      var y = botY - (v / maxV) * span;
+      el.style.cssText = axisLabelStyle(0.05, y);
+      el.style.textAlign = "left";
+      el.textContent = String(v);
+      host.appendChild(el);
+    }
+  }
+
   function paintTimeAxis(seconds) {
+    var host = chartHost();
+    if (!host) return;
     var sec = Number(seconds) || 10;
     chartWindowSec = sec;
-    var count = TIME_AXIS_IDS.length;
-    for (var i = 0; i < count; i++) {
-      var el = document.getElementById(TIME_AXIS_IDS[i]);
-      if (!el) continue;
-      var raw = sec * (i + 1) / count;
-      var value = sec <= 5 ? Math.round(raw * 10) / 10 : Math.round(raw);
+    clearAxisLabels("time");
+    hideStockAxis(TIME_AXIS_IDS);
+    var values;
+    if (sec === 5) values = [1, 2, 3, 4, 5];
+    else if (sec === 30) values = [5, 10, 15, 20, 25, 30];
+    else values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    var gridLeft = 1.5625;
+    var gridWidth = 18.6875;
+    var y = 15.0625;
+    values.forEach(function (value) {
+      var el = document.createElement("p");
+      el.setAttribute("data-vega-axis", "time");
+      var x = gridLeft + gridWidth * (value / sec) - 0.7;
+      el.style.cssText = axisLabelStyle(x, y);
+      el.style.textAlign = "center";
       el.textContent = String(value);
-    }
+      host.appendChild(el);
+    });
   }
 
   function selectTime(name) {
@@ -2511,6 +2552,7 @@
         chip.dataset.vegaOff = (chip.getAttribute("style") || "").indexOf("254, 254, 254") !== -1 ? "1" : "0";
       }
       paintChip(chip, chip.dataset.vegaOff === "1");
+      paintAxis();
       return;
     }
 
