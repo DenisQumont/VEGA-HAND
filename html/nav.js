@@ -386,6 +386,17 @@
     return message || name || "Не удалось подключиться к протезу";
   }
 
+  function isPickerCancel(error) {
+    if (error == null) return true;
+    var name = String(error.name || "");
+    var message = String(error.message || error.reason || error || "");
+    if (name === "AbortError" || name === "NotFoundError") return true;
+    // Bluefy / WebKit иногда отдают отмену без стандартного name.
+    if (/abort|cancel|dismiss|отмен|choos|no device|user denied|not found|closed/i.test(message)) return true;
+    if (error.code === 8 || error.code === 20) return true;
+    return false;
+  }
+
   function onPhoneDrop() {
     if (leaving || phoneBusy) return;
     phoneServer = null;
@@ -722,6 +733,10 @@
     try {
       request = navigator.bluetooth.requestDevice(options);
     } catch (error) {
+      if (isPickerCancel(error)) {
+        toast("Подключение нового протеза отменено", 4000);
+        return;
+      }
       toast(phoneFailText(error), 12000);
       return;
     }
@@ -744,14 +759,14 @@
         } catch (e) {}
         hideToast();
         go("ProfileHandShacke.html");
+      }, function (error) {
+        hideToast();
+        toast(phoneFailText(error), 12000);
       });
-    }).catch(function (error) {
-      // Отмена выбора — текущее соединение не трогаем.
-      if (error && (error.name === "NotFoundError" || error.name === "AbortError")) {
-        toast("Подключение нового протеза отменено", 4000);
-        return;
-      }
-      toast(phoneFailText(error), 12000);
+    }, function (error) {
+      // Только отмена/закрытие системного выбора устройства.
+      hideToast();
+      toast("Подключение нового протеза отменено", 4000);
     });
   }
 
