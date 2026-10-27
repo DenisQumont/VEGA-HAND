@@ -722,11 +722,27 @@
     return root;
   }
 
+  function sheetTitle(el) {
+    var text = el.textContent || "";
+    if (text.indexOf("Список устройств") !== -1 && text.indexOf("Доступные") !== -1) return "Список устройств";
+    if (text.indexOf("Информация об устройстве") !== -1) return "Информация об устройстве";
+    return "";
+  }
+
   function collectSheets() {
+    var stale = document.body.querySelectorAll("[data-vega-sheet]");
+    for (var s = 0; s < stale.length; s++) {
+      if (stale[s].parentElement === document.body) stale[s].parentElement.removeChild(stale[s]);
+    }
     var scope = document.getElementById("vega-root") || document;
     sheets = Array.prototype.filter.call(scope.querySelectorAll("div"), function (el) {
       var style = el.getAttribute("style") || "";
-      return style.indexOf("display: none") !== -1 && style.indexOf("41.25rem") !== -1 && style.indexOf("bottom: 0") !== -1;
+      var hit = style.indexOf("41.25rem") !== -1 && style.indexOf("bottom: 0") !== -1;
+      if (!hit) return false;
+      var title = sheetTitle(el);
+      if (!title) return false;
+      el.setAttribute("data-vega-sheet", title);
+      return true;
     });
     valueDialog = Array.prototype.filter.call(scope.querySelectorAll("div"), function (el) {
       var style = el.getAttribute("style") || "";
@@ -742,13 +758,6 @@
   scrim.style.cssText = "display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:4;";
   document.body.appendChild(scrim);
 
-  function sheetTitle(el) {
-    var text = el.textContent || "";
-    if (text.indexOf("Список устройств") !== -1 && text.indexOf("Доступные") !== -1) return "Список устройств";
-    if (text.indexOf("Информация об устройстве") !== -1) return "Информация об устройстве";
-    return "";
-  }
-
   var stubDialog = null;
 
   function hideOverlays() {
@@ -758,6 +767,23 @@
     var devices = document.getElementById("vega-devices");
     if (devices) devices.style.display = "none";
     scrim.style.display = "none";
+  }
+
+  function overlayMaxHeightPx() {
+    var view = window.visualViewport;
+    var h = view && view.height ? view.height : window.innerHeight;
+    return Math.max(240, Math.round(h * 0.85));
+  }
+
+  function ensureSheetScrollSize(el) {
+    var sizer = el.querySelector("[data-vega-sheet-sizer]");
+    if (!sizer) {
+      sizer = document.createElement("div");
+      sizer.setAttribute("data-vega-sheet-sizer", "1");
+      el.appendChild(sizer);
+    }
+    // Абсолютная вёрстка шита не даёт scrollHeight — фиксируем высоту макета.
+    sizer.style.cssText = "display:block;width:1px;height:41.25rem;pointer-events:none;visibility:hidden;";
   }
 
   function pinOverlay(el, bottom) {
@@ -770,6 +796,19 @@
     el.style.marginLeft = "auto";
     el.style.marginRight = "auto";
     el.style.bottom = bottom;
+    el.style.width = "22.5rem";
+    el.style.maxWidth = "100%";
+    if (el.getAttribute("data-vega-sheet") || sheets.indexOf(el) !== -1) {
+      var maxPx = overlayMaxHeightPx();
+      el.style.height = maxPx + "px";
+      el.style.maxHeight = maxPx + "px";
+      el.style.overflowX = "hidden";
+      el.style.overflowY = "auto";
+      el.style.webkitOverflowScrolling = "touch";
+      el.style.boxSizing = "border-box";
+      el.style.paddingBottom = "max(0.75rem, env(safe-area-inset-bottom, 0px))";
+      ensureSheetScrollSize(el);
+    }
     scrim.style.display = "block";
   }
 
@@ -781,6 +820,8 @@
       if (style.indexOf("height: 3rem") === -1) continue;
       var shell = labels[i].parentElement && labels[i].parentElement.parentElement;
       if (!shell) continue;
+      shell.style.cursor = "pointer";
+      shell.style.zIndex = "3";
       var kids = shell.children;
       for (var j = 0; j < kids.length; j++) {
         var kidStyle = kids[j].getAttribute("style") || "";
@@ -789,15 +830,18 @@
         kids[j].style.border = "0.125rem solid #111";
         kids[j].style.boxSizing = "border-box";
         kids[j].style.borderRadius = "0.625rem";
+        kids[j].style.pointerEvents = "none";
       }
+      if (labels[i].parentElement) labels[i].parentElement.style.pointerEvents = "auto";
     }
   }
 
   function openSheet(title) {
     var opened = false;
     sheets.forEach(function (el) {
-      if (sheetTitle(el) === title) {
+      if (sheetTitle(el) === title || el.getAttribute("data-vega-sheet") === title) {
         pinOverlay(el, "0");
+        el.scrollTop = 0;
         if (title === "Информация об устройстве") {
           var rows = el.querySelectorAll("div");
           for (var i = 0; i < rows.length; i++) {
@@ -2077,7 +2121,17 @@
     }
     closeMenus();
 
-    if (label === "Список устройств") return;
+    if (label === "Список устройств") {
+      // Кнопка на шите DIS → назад к списку. Тап по заголовку списка игнорируем.
+      for (var sheetIndex = 0; sheetIndex < sheets.length; sheetIndex++) {
+        if (sheets[sheetIndex].style.display === "none") continue;
+        if (sheets[sheetIndex].getAttribute("data-vega-sheet") === "Информация об устройстве") {
+          openSheet("Список устройств");
+          break;
+        }
+      }
+      return;
+    }
 
     if (label === "Выбрать") {
       hideOverlays();
