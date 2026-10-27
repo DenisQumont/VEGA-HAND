@@ -1047,36 +1047,33 @@
 
   function placeStubInViewport(dialog) {
     if (!dialog) return;
-    var view = window.visualViewport;
-    var vh = view && view.height ? view.height : (window.innerHeight || document.documentElement.clientHeight);
-    var offsetTop = view && view.offsetTop ? view.offsetTop : 0;
-    var dialogH = dialog.getBoundingClientRect().height || (18.75 * rootPx());
-    var gap = Math.max(12, Math.round(0.75 * rootPx()));
-    var bottomPad = Math.max(gap, (window.innerHeight || vh) - offsetTop - vh + gap);
-    // Держим форму в видимой области над клавиатурой, без сдвига страницы.
+    // Фиксируем без scale: иначе getBoundingClientRect ↔ transform даёт дрожь.
     dialog.style.top = "auto";
-    dialog.style.bottom = bottomPad + "px";
-    var avail = vh - gap * 2;
-    if (dialogH > avail && avail > 80) {
-      dialog.style.transformOrigin = "center bottom";
-      dialog.style.transform = "scale(" + Math.max(0.55, avail / dialogH).toFixed(3) + ")";
-    } else {
-      dialog.style.transform = "none";
+    dialog.style.transform = "none";
+    var view = window.visualViewport;
+    var gap = Math.max(16, Math.round(0.75 * rootPx()));
+    var keyboard = 0;
+    if (view && view.height) {
+      keyboard = Math.max(0, Math.round((window.innerHeight || view.height) - view.height - (view.offsetTop || 0)));
     }
+    dialog.style.bottom = (keyboard + gap) + "px";
   }
 
   function bindStubViewport() {
     if (window.__vegaStubViewportBound) return;
     window.__vegaStubViewportBound = true;
+    var timer = 0;
     function sync() {
       if (!stubDialog || stubDialog.style.display === "none") return;
-      placeStubInViewport(stubDialog);
-      if (overlayScrollLock) window.scrollTo(0, 0);
+      window.clearTimeout(timer);
+      // Один отложенный кадр после успокоения клавиатуры — без цикла на каждом scroll.
+      timer = window.setTimeout(function () {
+        if (!stubDialog || stubDialog.style.display === "none") return;
+        placeStubInViewport(stubDialog);
+      }, 120);
     }
-    window.addEventListener("resize", sync);
     if (window.visualViewport) {
       window.visualViewport.addEventListener("resize", sync);
-      window.visualViewport.addEventListener("scroll", sync);
     }
   }
 
@@ -1529,17 +1526,15 @@
     setTabBarsHidden(true);
     lockOverlayScroll();
     bindStubViewport();
-    pinOverlay(dialog, "0.75rem");
+    pinOverlay(dialog, "1rem");
     dialog.style.zIndex = "50";
     scrim.style.zIndex = "40";
     dialog.style.transform = "none";
     placeStubInViewport(dialog);
     if (mode) {
       window.setTimeout(function () {
-        placeStubInViewport(dialog);
         try { field.focus({ preventScroll: true }); } catch (e) { try { field.focus(); } catch (e2) {} }
-        if (overlayScrollLock) window.scrollTo(0, 0);
-      }, 0);
+      }, 30);
     }
     return dialog;
   }
@@ -2431,12 +2426,10 @@
         field.dataset.vegaLast = field.value;
       }
       window.setTimeout(function () {
-        placeStubInViewport(document.getElementById("vega-stub"));
         try { field.focus({ preventScroll: true }); field.select(); } catch (e) {
           try { field.focus(); field.select(); } catch (e2) {}
         }
-        if (overlayScrollLock) window.scrollTo(0, 0);
-      }, 40);
+      }, 30);
     }
   }
 
