@@ -204,7 +204,7 @@
       monitorGrip.style.textOverflow = "ellipsis";
       monitorGrip.style.transform = "none";
       monitorGrip.style.zIndex = "5";
-      monitorGrip.textContent = bleState.grip + " · " + gripLabel;
+      monitorGrip.textContent = "Схват №: " + bleState.grip;
     }
   }
 
@@ -839,6 +839,8 @@
         bleState.gripName = payload.gripName;
       }
       bleState.trigger = payload.trigger;
+      if (payload.myo1 != null) bleState.myo1 = payload.myo1;
+      if (payload.myo2 != null) bleState.myo2 = payload.myo2;
       if (payload.error !== bleState.error) {
         bleState.error = payload.error;
         if (payload.errorText) toast(payload.errorText);
@@ -847,6 +849,8 @@
       var connecting = document.getElementById("vega-toast");
       if (connecting && connecting.textContent.indexOf("Подключение") === 0) hideToast();
       bleState.lowBattery = !!payload.lowBattery;
+      pushChartSample(payload);
+      paintMonitorReadouts();
       paintLink();
       return;
     }
@@ -857,7 +861,11 @@
       if (payload.software) bleState.software = payload.software;
       if (payload.manufacturer) bleState.manufacturer = payload.manufacturer;
       if (payload.name) bleState.deviceName = payload.name;
-      if (payload.battery != null) bleState.battery = payload.battery;
+      if (payload.battery != null) {
+        bleState.battery = payload.battery;
+        pushChartSample({});
+        paintMonitorReadouts();
+      }
       paintLink();
       return;
     }
@@ -2079,11 +2087,17 @@
   }
 
   var chartWindowSec = 10;
+  var chartSamples = [];
+  var chartRaf = 0;
   var TIME_AXIS_IDS = ["34_809", "34_810", "34_811", "34_812", "34_813", "34_814", "34_816"];
   var VOLT_AXIS_IDS = ["34_806", "34_807", "34_808"];
 
   function chartHost() {
     return document.getElementById("34_859");
+  }
+
+  function chartMaxVolt() {
+    return chipOn("34_804") ? 10 : 5;
   }
 
   function clearAxisLabels(kind) {
@@ -2104,19 +2118,123 @@
     return "position:absolute;left:" + leftRem + "rem;top:" + topRem + "rem;width:2.1rem;height:1.25rem;margin:0;font-size:0.75rem;font-family:Roboto-Bold,sans-serif;font-weight:700;line-height:1.25rem;color:rgb(114,111,111);z-index:3;pointer-events:none;";
   }
 
+  function ensureChartCanvas() {
+    var plot = document.getElementById("34_782");
+    if (!plot) return null;
+    plot.style.backgroundImage = "none";
+    var canvas = plot.querySelector("canvas[data-vega-chart]");
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      canvas.setAttribute("data-vega-chart", "1");
+      canvas.style.cssText = "position:absolute;left:0;top:0;width:100%;height:100%;display:block;";
+      plot.appendChild(canvas);
+    }
+    return canvas;
+  }
+
+  function pushChartSample(packet) {
+    if (!document.getElementById("34_782")) return;
+    var now = Date.now();
+    var myo1 = packet && packet.myo1 != null ? packet.myo1 : bleState.myo1;
+    var myo2 = packet && packet.myo2 != null ? packet.myo2 : bleState.myo2;
+    chartSamples.push({
+      t: now,
+      myo1: myo1 != null ? myo1 / 1000 : null,
+      myo2: myo2 != null ? myo2 / 1000 : null,
+      battery: bleState.battery != null ? bleState.battery / 10 : null
+    });
+    var keep = chartWindowSec * 1000 + 800;
+    var cut = now - keep;
+    while (chartSamples.length && chartSamples[0].t < cut) chartSamples.shift();
+    scheduleChartDraw();
+  }
+
+  function scheduleChartDraw() {
+    if (chartRaf) return;
+    chartRaf = window.requestAnimationFrame(function () {
+      chartRaf = 0;
+      drawChart();
+    });
+  }
+
+  if (!window.__vegaChartResizeBound) {
+    window.__vegaChartResizeBound = true;
+    window.addEventListener("resize", function () {
+      if (document.getElementById("34_782")) scheduleChartDraw();
+    });
+  }
+
+  function drawChart() {
+    var canvas = ensureChartCanvas();
+    if (!canvas) return;
+    var plot = canvas.parentElement;
+    var w = plot.clientWidth;
+    var h = plot.clientHeight;
+    if (w < 2 || h < 2) return;
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(w * dpr));
+    canvas.height = Math.max(1, Math.round(h * dpr));
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    var maxV = chartMaxVolt();
+    var winMs = chartWindowSec * 1000;
+    var now = Date.now();
+    var t0 = now - winMs;
+
+    function drawSeries(key, color, enabled) {
+      if (!enabled) return;
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      var started = false;
+      for (var i = 0; i < chartSamples.length; i++) {
+        var sample = chartSamples[i];
+        if (sample.t < t0 || sample[key] == null) continue;
+        var x = ((sample.t - t0) / winMs) * w;
+        var y = h - (Math.max(0, Math.min(maxV, sample[key])) / maxV) * h;
+        if (!started) {
+          ctx.moveTo(x, y);
+          started = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      if (started) ctx.stroke();
+    }
+
+    drawSeries("myo1", "rgb(247,79,79)", chipOn("34_778"));
+    drawSeries("myo2", "rgb(38,112,247)", chipOn("34_780"));
+    drawSeries("battery", "rgb(55,90,118)", chipOn("34_804"));
+  }
+
+  function paintMonitorReadouts() {
+    var myo1 = document.getElementById("34_775");
+    var myo2 = document.getElementById("34_776");
+    var akb = document.getElementById("34_777");
+    if (myo1 && bleState.myo1 != null) myo1.textContent = "MYO-1: " + (bleState.myo1 / 1000).toFixed(1) + " В";
+    if (myo2 && bleState.myo2 != null) myo2.textContent = "MYO-2: " + (bleState.myo2 / 1000).toFixed(1) + " В";
+    if (akb && bleState.battery != null) akb.textContent = "АКБ: " + (bleState.battery / 10).toFixed(1) + " В";
+  }
+
   function paintAxis() {
     if (!chartHost()) return;
     hideStockAxis(TIME_AXIS_IDS);
     hideStockAxis(VOLT_AXIS_IDS);
+    ensureChartCanvas();
     paintVoltAxis();
     paintTimeAxis(chartWindowSec);
+    scheduleChartDraw();
   }
 
   function paintVoltAxis() {
     var host = chartHost();
     if (!host) return;
     clearAxisLabels("volt");
-    var maxV = chipOn("34_804") ? 10 : 5;
+    var maxV = chartMaxVolt();
     var topY = 1.25;
     var botY = 14.5625;
     var span = botY - topY;
@@ -2154,6 +2272,7 @@
       el.textContent = String(value);
       host.appendChild(el);
     });
+    scheduleChartDraw();
   }
 
   function selectTime(name) {
