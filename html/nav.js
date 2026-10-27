@@ -130,25 +130,54 @@
   }
 
   function linkStatus() {
-    if (!bleState.connected) return { text: "Нет связи", color: "rgb(180,180,180)" };
-    if (bleState.prosthesisState === 0) return { text: "Заблокирован", color: "rgb(214,40,40)" };
-    return { text: "Подключено", color: "rgb(13,199,54)" };
+    if (!bleState.connected) return { text: "Нет связи", color: "rgb(180,180,180)", btn: "rgb(149,154,157)" };
+    if (bleState.prosthesisState === 0) return { text: "Заблокирован", color: "rgb(214,40,40)", btn: "rgb(214,40,40)" };
+    return { text: "Подключен", color: "rgb(13,199,54)", btn: "rgb(55,90,118)" };
+  }
+
+  var BATTERY_IDS = ["34_171", "34_478", "34_444", "34_478", "35_714", "35_444"];
+  var DIS_STATUS_BTNS = ["34_451", "34_417", "35_687", "35_277", "35_523", "34_669"];
+  var DIS_STATUS_LABELS = ["34_452", "34_418", "35_688", "35_278", "35_524", "34_670"];
+
+  function paintBattery() {
+    var text = bleState.battery != null ? bleState.battery + "%" : "";
+    var seen = {};
+    BATTERY_IDS.forEach(function (id) {
+      if (seen[id]) return;
+      seen[id] = 1;
+      var node = document.getElementById(id);
+      if (!node) return;
+      node.textContent = text;
+      node.style.visibility = bleState.battery != null ? "visible" : "hidden";
+    });
+  }
+
+  function paintDisStatusButton() {
+    var status = linkStatus();
+    DIS_STATUS_BTNS.forEach(function (id) {
+      var btn = document.getElementById(id);
+      if (!btn) return;
+      btn.style.backgroundColor = status.btn;
+      btn.style.cursor = bleState.connected ? "pointer" : "default";
+      btn.setAttribute("data-vega-dis-status", "1");
+    });
+    DIS_STATUS_LABELS.forEach(function (id) {
+      paintText(id, status.text);
+    });
   }
 
   function paintLink() {
     var status = linkStatus();
     paintText("34_173_0", status.text);
     paintText("34_481", status.text);
-    paintText("34_452", status.text);
+    paintText("34_447", status.text);
     paintStatusDot("34_174", status.color);
     paintStatusDot("34_482", status.color);
+    paintDisStatusButton();
+    paintBattery();
     if (bleState.deviceName) {
       paintText("34_170", bleState.deviceName);
       paintText("34_483", bleState.deviceName);
-    }
-    if (bleState.battery != null) {
-      paintText("34_478", bleState.battery + "%");
-      paintText("34_171", bleState.battery + "%");
     }
     if (bleState.grip != null) {
       var gripName = document.getElementById("34_230_0_1");
@@ -361,6 +390,10 @@
     if (leaving || phoneBusy) return;
     phoneServer = null;
     phoneInput = null;
+    phoneMyoRead = null;
+    phoneMyoWrite = null;
+    phoneTelemetry = null;
+    bleState.battery = null;
     try {
       localStorage.removeItem("vega-prosthesis");
       localStorage.removeItem("vega-ble");
@@ -369,8 +402,30 @@
     onBleEvent({ event: "status", bridge: "phone", connected: false, reason: "disconnect" });
   }
 
+  function disconnectProsthesis() {
+    hideOverlays();
+    phoneBusy = true;
+    try {
+      if (window.__vegaBleDevice && window.__vegaBleDevice.gatt && window.__vegaBleDevice.gatt.connected) {
+        window.__vegaBleDevice.gatt.disconnect();
+      }
+    } catch (e) {}
+    phoneServer = null;
+    phoneInput = null;
+    phoneMyoRead = null;
+    phoneMyoWrite = null;
+    phoneTelemetry = null;
+    phoneBusy = false;
+    bleState.battery = null;
+    forgetPhone();
+    onBleEvent({ event: "status", bridge: "phone", connected: false, reason: "disconnect" });
+    toast("Протез отключён", 3500);
+  }
+
   function connectPhone(device, reason) {
     if (phoneJob) return phoneJob;
+    bleState.battery = null;
+    paintBattery();
     window.__vegaBleDevice = device;
     phoneJob = device.gatt.connect().then(function (server) {
       phoneServer = server;
@@ -608,6 +663,37 @@
     });
   }
 
+  function dropPhoneLinkQuiet() {
+    phoneBusy = true;
+    try {
+      if (window.__vegaBleDevice && window.__vegaBleDevice.gatt && window.__vegaBleDevice.gatt.connected) {
+        window.__vegaBleDevice.gatt.disconnect();
+      }
+    } catch (e) {}
+    phoneServer = null;
+    phoneInput = null;
+    phoneMyoRead = null;
+    phoneMyoWrite = null;
+    phoneTelemetry = null;
+    phoneJob = null;
+    bleState.battery = null;
+    phoneBusy = false;
+  }
+
+  function openProsthesisChooser() {
+    hideOverlays();
+    if (navigator.bluetooth && navigator.bluetooth.requestDevice) {
+      openDevicePicker();
+      return;
+    }
+    var dialog = ensureDevicePicker();
+    dialog.style.display = "block";
+    dialog.style.position = "fixed";
+    dialog.style.zIndex = "6";
+    scrim.style.display = "block";
+    bleRequest({ cmd: "hello" });
+  }
+
   function openDevicePicker() {
     pendingMode = "";
     editingSensor = "";
@@ -628,6 +714,7 @@
     var options = iphone
       ? { acceptAllDevices: true, optionalServices: services }
       : { filters: [{ namePrefix: "VEGA" }], optionalServices: services };
+    if (phoneServer && phoneServer.connected) dropPhoneLinkQuiet();
     var request;
     try {
       request = navigator.bluetooth.requestDevice(options);
@@ -682,6 +769,7 @@
         if (payload.connected) localStorage.setItem("vega-prosthesis", "1");
         else if (payload.reason === "disconnect") localStorage.removeItem("vega-prosthesis");
       } catch (e) {}
+      if (!payload.connected) bleState.battery = null;
       paintLink();
       if (payload.connected) hideToast();
       if (!payload.connected && payload.reason === "disconnect" && screenName === "ProfileHandShacke.html") {
@@ -873,8 +961,13 @@
     if (grab) return grab;
     grab = document.createElement("div");
     grab.setAttribute("data-vega-sheet-grab", "1");
-    grab.style.cssText = "position:sticky;top:0;left:0;right:0;z-index:8;height:1.75rem;display:flex;align-items:center;justify-content:center;background:linear-gradient(#fefefe 60%, rgba(254,254,254,0));cursor:grab;touch-action:none;";
+    grab.style.cssText = "position:sticky;top:0;left:0;right:0;z-index:8;height:1.75rem;display:flex;align-items:center;justify-content:center;background:linear-gradient(#fefefe 60%, rgba(254,254,254,0));cursor:pointer;touch-action:none;";
     grab.innerHTML = '<div style="width:2.75rem;height:0.25rem;border-radius:0.125rem;background:rgba(0,0,0,.22);"></div>';
+    grab.addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      hideOverlays();
+    });
     el.insertBefore(grab, el.firstChild);
     return grab;
   }
@@ -1058,13 +1151,7 @@
         pinOverlay(el, "0");
         el.scrollTop = 0;
         if (title === "Информация об устройстве") {
-          var rows = el.querySelectorAll("div");
-          for (var i = 0; i < rows.length; i++) {
-            if (normalize(rows[i].innerText) !== "Подключен") continue;
-            var box = inRem(rows[i].getBoundingClientRect());
-            if (box.h < 2 || box.h > 4 || box.w < 8) continue;
-            rows[i].style.backgroundColor = "rgb(55, 90, 118)";
-          }
+          paintDisStatusButton();
           sharpenDeviceListButton(el);
         }
         opened = true;
@@ -2089,7 +2176,7 @@
     for (var i = 0; i < rows.length; i++) rows[i].style.cursor = "pointer";
   }
 
-  function headerIcon(start) {
+  function headerIconInfo(start) {
     var node = start && start.nodeType === 1 ? start : start && start.parentElement;
     var shell = null;
     var kind = "";
@@ -2100,7 +2187,33 @@
       if (style.indexOf("width: 3.125rem") !== -1 && style.indexOf("height: 3.1875rem") !== -1) shell = node;
       node = node.parentElement;
     }
-    return kind && shell ? shell : null;
+    return kind && shell ? { shell: shell, kind: kind } : null;
+  }
+
+  function headerIcon(start) {
+    var info = headerIconInfo(start);
+    return info ? info.shell : null;
+  }
+
+  function isDisStatusHit(target) {
+    var node = target;
+    while (node && node !== document.body) {
+      if (node.getAttribute && node.getAttribute("data-vega-dis-status") === "1") return true;
+      if (node.id && DIS_STATUS_BTNS.indexOf(node.id) !== -1) return true;
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  function isSheetGrabHit(target) {
+    var node = target;
+    while (node && node !== document.body) {
+      if (node.getAttribute && node.getAttribute("data-vega-sheet-grab") === "1") return true;
+      var style = node.getAttribute && node.getAttribute("style") || "";
+      if (style.indexOf("height: 0.1875rem") !== -1 && style.indexOf("width: 2.8125rem") !== -1) return true;
+      node = node.parentElement;
+    }
+    return false;
   }
 
   function bindHeaderIcons() {
@@ -2189,6 +2302,11 @@
     if (event.target && event.target.getAttribute && event.target.getAttribute("data-vega-number")) return;
     if (event.target && (event.target.tagName === "SELECT" || event.target.tagName === "OPTION")) return;
 
+    if (isSheetGrabHit(event.target)) {
+      hideOverlays();
+      return;
+    }
+
     var label = "";
     var node = event.target;
     while (node && node !== document.body) {
@@ -2197,6 +2315,11 @@
         if (label) break;
       }
       node = node.parentElement;
+    }
+
+    if (isDisStatusHit(event.target) && (label === "Подключен" || label === "Подключено" || label === "Заблокирован" || label === "Нет связи" || !label)) {
+      if (prosthesisConnected()) disconnectProsthesis();
+      return;
     }
 
     if (label === "Сохранить") {
@@ -2247,7 +2370,13 @@
       return;
     }
 
-    if (label === "Добавить документ" || docCard(event.target) || headerIcon(event.target)) return;
+    if (label === "Добавить документ" || docCard(event.target)) return;
+
+    var header = headerIconInfo(event.target);
+    if (header) {
+      if (header.kind === "ble") openProsthesisChooser();
+      return;
+    }
 
     if (label === "Добавить профиль протеза" || addProfileCard(event.target)) {
       openDevicePicker();
@@ -2338,14 +2467,7 @@
     closeMenus();
 
     if (label === "Список устройств") {
-      // Кнопка на шите DIS → назад к списку. Тап по заголовку списка игнорируем.
-      for (var sheetIndex = 0; sheetIndex < sheets.length; sheetIndex++) {
-        if (sheets[sheetIndex].style.display === "none") continue;
-        if (sheets[sheetIndex].getAttribute("data-vega-sheet") === "Информация об устройстве") {
-          openSheet("Список устройств");
-          break;
-        }
-      }
+      openProsthesisChooser();
       return;
     }
 
@@ -2454,6 +2576,12 @@
       toast(savedBleError, 12000);
     }
   } catch (e) {}
+  window.addEventListener("beforeunload", function (event) {
+    if (!prosthesisConnected()) return;
+    event.preventDefault();
+    event.returnValue = "Соединение с протезом может быть потеряно.";
+    return event.returnValue;
+  });
   bleRequest({ cmd: "hello" });
   function bindGripScroll() {
     var row = document.getElementById("vega-grips");
