@@ -747,7 +747,10 @@
       });
     }).catch(function (error) {
       // Отмена выбора — текущее соединение не трогаем.
-      if (error && (error.name === "NotFoundError" || error.name === "AbortError")) return;
+      if (error && (error.name === "NotFoundError" || error.name === "AbortError")) {
+        toast("Подключение нового протеза отменено", 4000);
+        return;
+      }
       toast(phoneFailText(error), 12000);
     });
   }
