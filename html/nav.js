@@ -204,7 +204,25 @@
       monitorGrip.style.textOverflow = "ellipsis";
       monitorGrip.style.transform = "none";
       monitorGrip.style.zIndex = "5";
+      monitorGrip.style.fontSize = "0.9375rem";
+      monitorGrip.style.lineHeight = "1.125rem";
+      monitorGrip.style.fontFamily = "Roboto-Medium,sans-serif";
+      monitorGrip.style.fontWeight = "500";
       monitorGrip.textContent = "Схват №: " + bleState.grip;
+    }
+  }
+
+  function paintMonitorTabBar() {
+    var bar = document.getElementById("34_758");
+    if (!bar) return;
+    bar.style.zIndex = "30";
+    bar.style.backgroundColor = "#fefefe";
+    bar.style.paddingBottom = "env(safe-area-inset-bottom, 0px)";
+    bar.style.boxSizing = "content-box";
+    var fill = bar.firstElementChild;
+    if (fill) {
+      fill.style.backgroundColor = "#fefefe";
+      fill.style.height = "4.25rem";
     }
   }
 
@@ -345,12 +363,23 @@
       custom2Pos: [0, 1, 2, 3, 4, 5].map(function (i) { return view.getInt8(29 + i); }),
       myo1: view.getUint16(35, true),
       myo2: view.getUint16(37, true),
+      vbat: view.getUint16(51, true),
       k1: Math.round(view.getFloat32(53, true) * 10) / 10,
       k2: Math.round(view.getFloat32(57, true) * 10) / 10,
       connectionMode: secure,
       mode: secure ? "user" : "service",
       lowBattery: view.getUint8(0) === 0x28
     };
+  }
+
+  function adcToMyoVolt(adc) {
+    if (adc == null || isNaN(adc)) return null;
+    return adc * 3.3 * 7.1 / (4.7 * 4095) + 0.15;
+  }
+
+  function adcToCellVolt(adc) {
+    if (adc == null || isNaN(adc)) return null;
+    return adc * 3.3 * 14.7 / (4.7 * 4095) + 0.15;
   }
 
   function packPhoneInput(state, source, k1, k2) {
@@ -415,7 +444,7 @@
     phoneMyoRead = null;
     phoneMyoWrite = null;
     phoneTelemetry = null;
-    bleState.battery = null;
+    bleState.battery = null; bleState.vbat = null;
     try {
       localStorage.removeItem("vega-prosthesis");
       localStorage.removeItem("vega-ble");
@@ -438,7 +467,7 @@
     phoneMyoWrite = null;
     phoneTelemetry = null;
     phoneBusy = false;
-    bleState.battery = null;
+    bleState.battery = null; bleState.vbat = null;
     forgetPhone();
     onBleEvent({ event: "status", bridge: "phone", connected: false, reason: "disconnect" });
     toast("Протез отключён", 3500);
@@ -446,7 +475,7 @@
 
   function connectPhone(device, reason) {
     if (phoneJob) return phoneJob;
-    bleState.battery = null;
+    bleState.battery = null; bleState.vbat = null;
     paintBattery();
     window.__vegaBleDevice = device;
     phoneJob = device.gatt.connect().then(function (server) {
@@ -702,7 +731,7 @@
     phoneMyoWrite = null;
     phoneTelemetry = null;
     phoneJob = null;
-    bleState.battery = null;
+    bleState.battery = null; bleState.vbat = null;
     phoneBusy = false;
   }
 
@@ -809,7 +838,10 @@
         if (payload.connected) localStorage.setItem("vega-prosthesis", "1");
         else if (payload.reason === "disconnect") localStorage.removeItem("vega-prosthesis");
       } catch (e) {}
-      if (!payload.connected) bleState.battery = null;
+      if (!payload.connected) {
+        bleState.battery = null;
+        bleState.vbat = null;
+      }
       paintLink();
       if (payload.connected) hideToast();
       if (!payload.connected && payload.reason === "disconnect" && screenName === "ProfileHandShacke.html") {
@@ -841,6 +873,7 @@
       bleState.trigger = payload.trigger;
       if (payload.myo1 != null) bleState.myo1 = payload.myo1;
       if (payload.myo2 != null) bleState.myo2 = payload.myo2;
+      if (payload.vbat != null) bleState.vbat = payload.vbat;
       if (payload.error !== bleState.error) {
         bleState.error = payload.error;
         if (payload.errorText) toast(payload.errorText);
@@ -2137,11 +2170,12 @@
     var now = Date.now();
     var myo1 = packet && packet.myo1 != null ? packet.myo1 : bleState.myo1;
     var myo2 = packet && packet.myo2 != null ? packet.myo2 : bleState.myo2;
+    var vbat = packet && packet.vbat != null ? packet.vbat : bleState.vbat;
     chartSamples.push({
       t: now,
-      myo1: myo1 != null ? myo1 / 1000 : null,
-      myo2: myo2 != null ? myo2 / 1000 : null,
-      battery: bleState.battery != null ? bleState.battery / 10 : null
+      myo1: adcToMyoVolt(myo1),
+      myo2: adcToMyoVolt(myo2),
+      battery: adcToCellVolt(vbat)
     });
     var keep = chartWindowSec * 1000 + 800;
     var cut = now - keep;
@@ -2215,9 +2249,12 @@
     var myo1 = document.getElementById("34_775");
     var myo2 = document.getElementById("34_776");
     var akb = document.getElementById("34_777");
-    if (myo1 && bleState.myo1 != null) myo1.textContent = "MYO-1: " + (bleState.myo1 / 1000).toFixed(1) + " В";
-    if (myo2 && bleState.myo2 != null) myo2.textContent = "MYO-2: " + (bleState.myo2 / 1000).toFixed(1) + " В";
-    if (akb && bleState.battery != null) akb.textContent = "АКБ: " + (bleState.battery / 10).toFixed(1) + " В";
+    var myo1V = adcToMyoVolt(bleState.myo1);
+    var myo2V = adcToMyoVolt(bleState.myo2);
+    var cellV = adcToCellVolt(bleState.vbat);
+    if (myo1 && myo1V != null) myo1.textContent = "MYO-1: " + myo1V.toFixed(1) + " В";
+    if (myo2 && myo2V != null) myo2.textContent = "MYO-2: " + myo2V.toFixed(1) + " В";
+    if (akb && cellV != null) akb.textContent = "АКБ: " + cellV.toFixed(1) + " В";
   }
 
   function paintAxis() {
@@ -2748,6 +2785,7 @@
     bindPencils();
     bindSettingsRows();
     paintAxis();
+    paintMonitorTabBar();
     bindGripScroll();
     hideIconBesideNotification();
     ensureUpButton();
