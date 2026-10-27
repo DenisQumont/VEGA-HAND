@@ -863,8 +863,9 @@
     if (payload.event === "telemetry") {
       bleState.connected = true;
       bleState.mode = payload.mode || bleState.mode;
-      bleState.k1 = payload.k1;
-      bleState.k2 = payload.k2;
+      if (payload.k1 != null) bleState.k1 = payload.k1;
+      if (payload.k2 != null) bleState.k2 = payload.k2;
+      paintMonitorSensitivity();
       if (payload.state != null) bleState.prosthesisState = payload.state;
       if (payload.grip != null) {
         bleState.grip = payload.grip;
@@ -919,6 +920,7 @@
     if (payload.event === "k") {
       bleState.k1 = payload.k1;
       bleState.k2 = payload.k2;
+      paintMonitorSensitivity();
       toast("Коэффициент миодатчика отправлен");
       return;
     }
@@ -2257,6 +2259,60 @@
     if (akb && cellV != null) akb.textContent = "АКБ: " + cellV.toFixed(1) + " В";
   }
 
+  function formatMyoK(value) {
+    var n = Number(value);
+    if (isNaN(n)) return "—";
+    return (Math.round(n * 10) / 10).toFixed(1);
+  }
+
+  function paintMonitorSensitivity() {
+    var k1 = document.getElementById("34_833");
+    var k2 = document.getElementById("34_867");
+    if (k1 && bleState.k1 != null) k1.textContent = formatMyoK(bleState.k1);
+    if (k2 && bleState.k2 != null) k2.textContent = formatMyoK(bleState.k2);
+    ["34_832", "34_866", "34_833", "34_867", "34_834", "34_868"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.cursor = "pointer";
+    });
+  }
+
+  function openMyoSensitivity(sensor) {
+    if (sensor !== "1" && sensor !== "2") return;
+    editingSensor = sensor;
+    pendingMode = "";
+    openStub(
+      "Чувствительность MYO датчика " + sensor,
+      "Введите значение параметра MYO-" + sensor,
+      "Пример: 0.4",
+      "Отправить",
+      "Диапазон значений: 0.0 ... 1.0",
+      true
+    );
+    var field = document.querySelector("#vega-stub [data-vega-stub-field]");
+    if (field) {
+      var current = sensor === "1" ? bleState.k1 : bleState.k2;
+      if (current != null) field.value = formatMyoK(current);
+      window.setTimeout(function () {
+        try { field.focus(); field.select(); } catch (e) {}
+      }, 40);
+    }
+  }
+
+  function sensitivityFieldOf(start) {
+    var node = start && start.nodeType === 1 ? start : start && start.parentElement;
+    while (node && node !== document.body) {
+      if (node.id === "34_832" || node.id === "34_833" || node.id === "34_834") return "1";
+      if (node.id === "34_866" || node.id === "34_867" || node.id === "34_868") return "2";
+      if (node.id === "34_861" || node.id === "34_862") {
+        var text = node.innerText || "";
+        if (text.indexOf("MYO-2") !== -1) return "2";
+        if (text.indexOf("MYO-1") !== -1) return "1";
+      }
+      node = node.parentElement;
+    }
+    return "";
+  }
+
   function paintAxis() {
     if (!chartHost()) return;
     hideStockAxis(TIME_AXIS_IDS);
@@ -2267,18 +2323,37 @@
     scheduleChartDraw();
   }
 
+  function plotVoltRangeRem() {
+    var host = chartHost();
+    var plot = document.getElementById("34_782");
+    if (!host || !plot) return null;
+    var rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    if (rem < 1) rem = 16;
+    var hostRect = host.getBoundingClientRect();
+    var plotRect = plot.getBoundingClientRect();
+    var top = (plotRect.top - hostRect.top) / rem;
+    // clientHeight = область canvas (без нижней рамки), как в drawChart
+    return {
+      top: top,
+      bottom: top + plot.clientHeight / rem
+    };
+  }
+
   function paintVoltAxis() {
     var host = chartHost();
     if (!host) return;
     clearAxisLabels("volt");
     var maxV = chartMaxVolt();
-    var topY = 1.25;
-    var botY = 14.5625;
+    var range = plotVoltRangeRem();
+    var topY = range ? range.top : 0;
+    var botY = range ? range.bottom : 15.25;
     var span = botY - topY;
+    var labelH = 1.25;
     for (var v = 0; v <= maxV; v++) {
       var el = document.createElement("p");
       el.setAttribute("data-vega-axis", "volt");
-      var y = botY - (v / maxV) * span;
+      var tick = botY - (v / maxV) * span;
+      var y = tick - labelH / 2;
       el.style.cssText = axisLabelStyle(0.05, y);
       el.style.textAlign = "left";
       el.textContent = String(v);
@@ -2604,12 +2679,17 @@
       }
       if (editingSensor) {
         var sensorField = document.querySelector("#vega-stub [data-vega-stub-field]");
-        var sensorValue = sensorField ? sensorField.value : "";
-        if (!sensorValue) return;
+        var sensorValue = sensorField ? String(sensorField.value).trim().replace(",", ".") : "";
+        var parsedK = Number(sensorValue);
+        if (!sensorValue || isNaN(parsedK) || parsedK < 0 || parsedK > 1) {
+          toast("Введите значение от 0.0 до 1.0");
+          return;
+        }
+        parsedK = Math.round(parsedK * 10) / 10;
         var sensor = editingSensor;
         editingSensor = "";
         hideOverlays();
-        bleRequest({ cmd: "set_k", sensor: Number(sensor), value: Number(sensorValue), k1: bleState.k1, k2: bleState.k2 });
+        bleRequest({ cmd: "set_k", sensor: Number(sensor), value: parsedK, k1: bleState.k1, k2: bleState.k2 });
         return;
       }
       saveGripLoad();
@@ -2675,19 +2755,9 @@
       return;
     }
 
-    var pencil = pencilOf(event.target);
-    if (pencil) {
-      var sensor = pencilSensor(pencil);
-      editingSensor = sensor;
-      pendingMode = "";
-      openStub(
-        "Чувствительность MYO датчика " + sensor,
-        "Введите значение параметра MYO-" + sensor,
-        "Пример: 0.4",
-        "Отправить",
-        "Диапазон значений: 0.0 ... 1.0",
-        true
-      );
+    var sensitivitySensor = sensitivityFieldOf(event.target) || (pencilOf(event.target) ? pencilSensor(pencilOf(event.target)) : "");
+    if (sensitivitySensor) {
+      openMyoSensitivity(sensitivitySensor);
       return;
     }
 
@@ -2786,6 +2856,7 @@
     bindSettingsRows();
     paintAxis();
     paintMonitorTabBar();
+    paintMonitorSensitivity();
     bindGripScroll();
     hideIconBesideNotification();
     ensureUpButton();
