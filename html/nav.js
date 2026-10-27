@@ -153,16 +153,16 @@
   }
 
   function paintDisStatusButton() {
-    var status = linkStatus();
+    var connected = !!bleState.connected;
     DIS_STATUS_BTNS.forEach(function (id) {
       var btn = document.getElementById(id);
       if (!btn) return;
-      btn.style.backgroundColor = status.btn;
-      btn.style.cursor = bleState.connected ? "pointer" : "default";
+      btn.style.backgroundColor = connected ? "rgb(55,90,118)" : "rgb(149,154,157)";
+      btn.style.cursor = connected ? "pointer" : "default";
       btn.setAttribute("data-vega-dis-status", "1");
     });
     DIS_STATUS_LABELS.forEach(function (id) {
-      paintText(id, status.text);
+      paintText(id, "Отключить");
     });
   }
 
@@ -497,6 +497,19 @@
     }
   }
 
+  function readPhoneBattery() {
+    if (!phoneServer || !phoneServer.connected) return Promise.resolve();
+    return gattCall(function () {
+      return phoneServer.getPrimaryService("0000180f-0000-1000-8000-00805f9b34fb");
+    }).then(function (service) {
+      return service.getCharacteristic("00002a19-0000-1000-8000-00805f9b34fb");
+    }).then(function (char) {
+      return char.readValue();
+    }).then(function (view) {
+      if (view) onBleEvent({ event: "info", bridge: "phone", battery: view.getUint8(0) });
+    }).catch(function () {});
+  }
+
   function loadPhoneProfile(serialChar) {
     var fields = [
       ["00002a29-0000-1000-8000-00805f9b34fb", "manufacturer"],
@@ -507,7 +520,8 @@
     function stillUp() {
       return !!(phoneServer && phoneServer.connected);
     }
-    var chain = phoneWait(600).catch(function () {});
+    // Заряд читаем сразу — не ждём DIS/serial.
+    var chain = readPhoneBattery();
     if (serialChar) {
       chain = chain.then(function () {
         if (!stillUp()) return;
@@ -533,16 +547,6 @@
         });
       }).catch(function () {});
     });
-    chain.then(function () {
-      if (!stillUp()) return;
-      return gattCall(function () { return phoneServer.getPrimaryService("0000180f-0000-1000-8000-00805f9b34fb"); }).then(function (service) {
-        return service.getCharacteristic("00002a19-0000-1000-8000-00805f9b34fb");
-      }).then(function (char) {
-        return char.readValue();
-      }).then(function (view) {
-        if (view) onBleEvent({ event: "info", bridge: "phone", battery: view.getUint8(0) });
-      });
-    }).catch(function () {});
   }
 
   function findPhoneDevice(attempt) {
@@ -714,7 +718,6 @@
     var options = iphone
       ? { acceptAllDevices: true, optionalServices: services }
       : { filters: [{ namePrefix: "VEGA" }], optionalServices: services };
-    if (phoneServer && phoneServer.connected) dropPhoneLinkQuiet();
     var request;
     try {
       request = navigator.bluetooth.requestDevice(options);
@@ -723,7 +726,15 @@
       return;
     }
     request.then(function (device) {
+      var currentId = window.__vegaBleDevice && window.__vegaBleDevice.id;
+      if (phoneServer && phoneServer.connected && currentId && currentId === device.id) {
+        hideToast();
+        go("ProfileHandShacke.html");
+        return;
+      }
       toast("Подключение к " + (device.name || "протезу") + "…", 0);
+      // Рвём старое соединение только после выбора нового устройства.
+      if (phoneServer && phoneServer.connected) dropPhoneLinkQuiet();
       return connectPhone(device, "hello").then(function () {
         try {
           localStorage.setItem("vega-device-id", device.id);
@@ -735,8 +746,8 @@
         go("ProfileHandShacke.html");
       });
     }).catch(function (error) {
+      // Отмена выбора — текущее соединение не трогаем.
       if (error && (error.name === "NotFoundError" || error.name === "AbortError")) return;
-      forgetPhone();
       toast(phoneFailText(error), 12000);
     });
   }
@@ -2132,6 +2143,7 @@
     "Схват Ключа": 1,
     "Список устройств": 1,
     "Выбрать": 1,
+    "Отключить": 1,
     "Отправить": 1,
     "Пользовательский режим": 1,
     "Сервисный режим протеза": 1,
@@ -2317,7 +2329,7 @@
       node = node.parentElement;
     }
 
-    if (isDisStatusHit(event.target) && (label === "Подключен" || label === "Подключено" || label === "Заблокирован" || label === "Нет связи" || !label)) {
+    if (isDisStatusHit(event.target) && (label === "Отключить" || label === "Подключен" || label === "Подключено" || label === "Заблокирован" || !label)) {
       if (prosthesisConnected()) disconnectProsthesis();
       return;
     }
