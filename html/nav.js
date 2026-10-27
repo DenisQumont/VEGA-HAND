@@ -199,11 +199,21 @@
     paintText("34_230_1_1", "Номер схвата: " + bleState.grip);
     var monitorGrip = document.getElementById("34_826");
     if (monitorGrip) {
-      monitorGrip.style.whiteSpace = "pre-line";
-      monitorGrip.style.lineHeight = "1.1rem";
+      monitorGrip.style.whiteSpace = "nowrap";
+      monitorGrip.style.lineHeight = "1.25rem";
       monitorGrip.style.textAlign = "right";
-      monitorGrip.style.justifyContent = "center";
-      monitorGrip.textContent = "Номер схвата: " + bleState.grip + "\n" + gripLabel;
+      monitorGrip.style.overflow = "hidden";
+      monitorGrip.style.transformOrigin = "right center";
+      monitorGrip.style.transform = "none";
+      monitorGrip.textContent = bleState.grip + " · " + gripLabel;
+      window.requestAnimationFrame(function () {
+        if (!monitorGrip.isConnected) return;
+        var avail = monitorGrip.clientWidth || 0;
+        var need = monitorGrip.scrollWidth;
+        if (avail > 0 && need > avail) {
+          monitorGrip.style.transform = "scaleX(" + (avail / need) + ")";
+        }
+      });
     }
   }
 
@@ -2077,6 +2087,9 @@
     return (el.getAttribute("style") || "").indexOf("254, 254, 254") === -1;
   }
 
+  var chartWindowSec = 10;
+  var TIME_AXIS_IDS = ["34_809", "34_810", "34_811", "34_812", "34_813", "34_814", "34_816"];
+
   function paintAxis() {
     var top = document.getElementById("34_806");
     if (!top) return;
@@ -2086,6 +2099,20 @@
     top.textContent = String(max);
     if (mid) mid.textContent = String(max / 2);
     if (bot) bot.textContent = "0";
+    paintTimeAxis(chartWindowSec);
+  }
+
+  function paintTimeAxis(seconds) {
+    var sec = Number(seconds) || 10;
+    chartWindowSec = sec;
+    var count = TIME_AXIS_IDS.length;
+    for (var i = 0; i < count; i++) {
+      var el = document.getElementById(TIME_AXIS_IDS[i]);
+      if (!el) continue;
+      var raw = sec * (i + 1) / count;
+      var value = sec <= 5 ? Math.round(raw * 10) / 10 : Math.round(raw);
+      el.textContent = String(value);
+    }
   }
 
   function selectTime(name) {
@@ -2099,6 +2126,8 @@
       chip.style.backgroundColor = on ? "rgb(55,90,118)" : "#fefefe";
       labels[i].style.color = on ? "#fefefe" : "rgb(70,68,68)";
     }
+    var sec = name === "5 сек" ? 5 : name === "30 сек" ? 30 : 10;
+    paintTimeAxis(sec);
   }
 
   function chipOf(target) {
