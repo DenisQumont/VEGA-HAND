@@ -135,9 +135,12 @@
     return { text: "Подключен", color: "rgb(13,199,54)", btn: "rgb(55,90,118)" };
   }
 
-  var BATTERY_IDS = ["34_171", "34_478", "34_444", "34_478", "35_714", "35_444"];
+  var BATTERY_IDS = ["34_171", "34_478", "34_444", "35_714", "35_444", "34_821", "34_696"];
   var DIS_STATUS_BTNS = ["34_451", "34_417", "35_687", "35_277", "35_523", "34_669"];
   var DIS_STATUS_LABELS = ["34_452", "34_418", "35_688", "35_278", "35_524", "34_670"];
+  var DEVICE_NAME_IDS = ["34_170", "34_483", "34_825", "34_701", "34_449"];
+  var STATUS_TEXT_IDS = ["34_173_0", "34_481", "34_447", "34_823", "34_699"];
+  var STATUS_DOT_IDS = ["34_174", "34_482", "34_824", "34_700"];
 
   function paintBattery() {
     var text = bleState.battery != null ? bleState.battery + "%" : "";
@@ -166,47 +169,54 @@
     });
   }
 
+  function paintGripInfo() {
+    if (bleState.grip == null) return;
+    var gripLabel = bleState.gripName || ("Схват " + bleState.grip);
+    var gripName = document.getElementById("34_230_0_1");
+    if (gripName) {
+      gripName.textContent = "Активный схват: " + gripLabel;
+      gripName.style.fontSize = "";
+      gripName.style.letterSpacing = "";
+      gripName.style.whiteSpace = "nowrap";
+      gripName.style.display = "inline-block";
+      gripName.style.transformOrigin = "left center";
+      gripName.style.transform = "none";
+      var gripLine = gripName.parentElement;
+      if (gripLine) {
+        gripLine.style.whiteSpace = "nowrap";
+        gripLine.style.overflow = "hidden";
+        gripLine.style.maxWidth = "100%";
+      }
+      window.requestAnimationFrame(function () {
+        if (!gripName.isConnected) return;
+        var avail = (gripLine && gripLine.clientWidth) || 0;
+        var need = gripName.scrollWidth;
+        if (avail > 0 && need > avail) {
+          gripName.style.transform = "scaleX(" + (avail / need) + ")";
+        }
+      });
+    }
+    paintText("34_230_1_1", "Номер схвата: " + bleState.grip);
+    var monitorGrip = document.getElementById("34_826");
+    if (monitorGrip) {
+      monitorGrip.style.whiteSpace = "pre-line";
+      monitorGrip.style.lineHeight = "1.1rem";
+      monitorGrip.style.textAlign = "right";
+      monitorGrip.style.justifyContent = "center";
+      monitorGrip.textContent = "Номер схвата: " + bleState.grip + "\n" + gripLabel;
+    }
+  }
+
   function paintLink() {
     var status = linkStatus();
-    paintText("34_173_0", status.text);
-    paintText("34_481", status.text);
-    paintText("34_447", status.text);
-    paintStatusDot("34_174", status.color);
-    paintStatusDot("34_482", status.color);
+    STATUS_TEXT_IDS.forEach(function (id) { paintText(id, status.text); });
+    STATUS_DOT_IDS.forEach(function (id) { paintStatusDot(id, status.color); });
     paintDisStatusButton();
     paintBattery();
     if (bleState.deviceName) {
-      paintText("34_170", bleState.deviceName);
-      paintText("34_483", bleState.deviceName);
+      DEVICE_NAME_IDS.forEach(function (id) { paintText(id, bleState.deviceName); });
     }
-    if (bleState.grip != null) {
-      var gripName = document.getElementById("34_230_0_1");
-      if (gripName) {
-        var gripLabel = bleState.gripName || ("Схват " + bleState.grip);
-        gripName.textContent = "Активный схват: " + gripLabel;
-        gripName.style.fontSize = "";
-        gripName.style.letterSpacing = "";
-        gripName.style.whiteSpace = "nowrap";
-        gripName.style.display = "inline-block";
-        gripName.style.transformOrigin = "left center";
-        gripName.style.transform = "none";
-        var gripLine = gripName.parentElement;
-        if (gripLine) {
-          gripLine.style.whiteSpace = "nowrap";
-          gripLine.style.overflow = "hidden";
-          gripLine.style.maxWidth = "100%";
-        }
-        window.requestAnimationFrame(function () {
-          if (!gripName.isConnected) return;
-          var avail = (gripLine && gripLine.clientWidth) || 0;
-          var need = gripName.scrollWidth;
-          if (avail > 0 && need > avail) {
-            gripName.style.transform = "scaleX(" + (avail / need) + ")";
-          }
-        });
-      }
-      paintText("34_230_1_1", "Номер схвата: " + bleState.grip);
-    }
+    paintGripInfo();
     paintLockedNav();
     paintAppVersion();
     var trigger = document.getElementById("34_815");
