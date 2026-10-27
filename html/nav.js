@@ -868,69 +868,126 @@
     sizer.style.cssText = "display:block;width:1px;height:41.25rem;pointer-events:none;visibility:hidden;";
   }
 
+  function ensureSheetGrabber(el) {
+    var grab = el.querySelector("[data-vega-sheet-grab]");
+    if (grab) return grab;
+    grab = document.createElement("div");
+    grab.setAttribute("data-vega-sheet-grab", "1");
+    grab.style.cssText = "position:sticky;top:0;left:0;right:0;z-index:8;height:1.75rem;display:flex;align-items:center;justify-content:center;background:linear-gradient(#fefefe 60%, rgba(254,254,254,0));cursor:grab;touch-action:none;";
+    grab.innerHTML = '<div style="width:2.75rem;height:0.25rem;border-radius:0.125rem;background:rgba(0,0,0,.22);"></div>';
+    el.insertBefore(grab, el.firstChild);
+    return grab;
+  }
+
   function bindSheetSwipe(el) {
     if (el.getAttribute("data-vega-swipe") === "1") return;
     el.setAttribute("data-vega-swipe", "1");
     var drag = null;
 
-    function handleZonePx() {
-      return rootPx() * 5.5;
+    function releaseCapture(id) {
+      try { el.releasePointerCapture(id); } catch (err) {}
+    }
+
+    function finishHide() {
+      el.style.transform = "";
+      el.style.transition = "";
+      el.style.overflowY = "auto";
+      hideOverlays();
+    }
+
+    function snapBack() {
+      el.style.transition = "transform 0.22s ease-out";
+      el.style.transform = "translateY(0)";
+      scrim.style.transition = "opacity 0.22s ease-out";
+      scrim.style.opacity = "1";
+      window.setTimeout(function () {
+        el.style.transform = "";
+        el.style.transition = "";
+        el.style.overflowY = "auto";
+        scrim.style.transition = "";
+        scrim.style.opacity = "";
+      }, 220);
+    }
+
+    function dismiss(dy) {
+      var h = el.getBoundingClientRect().height || overlayMaxHeightPx();
+      el.style.transition = "transform 0.28s ease-out";
+      el.style.transform = "translateY(" + Math.max(h, dy) + "px)";
+      scrim.style.transition = "opacity 0.28s ease-out";
+      scrim.style.opacity = "0";
+      window.setTimeout(finishHide, 280);
     }
 
     el.addEventListener("pointerdown", function (event) {
       if (event.pointerType === "mouse" && event.button !== 0) return;
-      var rect = el.getBoundingClientRect();
-      var fromTop = event.clientY - rect.top;
-      if (fromTop > handleZonePx() && el.scrollTop > 2) return;
-      drag = { id: event.pointerId, y: event.clientY, dy: 0, moving: false };
-      try { el.setPointerCapture(event.pointerId); } catch (err) {}
+      var onGrab = !!(event.target && event.target.closest && event.target.closest("[data-vega-sheet-grab]"));
+      drag = {
+        id: event.pointerId,
+        y: event.clientY,
+        lastY: event.clientY,
+        lastT: Date.now(),
+        dy: 0,
+        velocity: 0,
+        moving: false,
+        fromGrab: onGrab,
+        startScroll: el.scrollTop
+      };
     });
 
     el.addEventListener("pointermove", function (event) {
       if (!drag || drag.id !== event.pointerId) return;
       var dy = event.clientY - drag.y;
-      if (dy < 0) dy = 0;
-      if (!drag.moving && dy < 8) return;
-      if (el.scrollTop > 2 && dy > 0 && !drag.moving) {
+      var now = Date.now();
+      var dt = Math.max(1, now - drag.lastT);
+      drag.velocity = (event.clientY - drag.lastY) / dt;
+      drag.lastY = event.clientY;
+      drag.lastT = now;
+
+      // Скролл контента вверх — не перехватываем.
+      if (!drag.moving && dy < -6) {
         drag = null;
         return;
       }
-      drag.moving = true;
+
+      // Шторка: тянем вниз с самого верха или за ручку.
+      var canPull = drag.fromGrab || drag.startScroll <= 1 || el.scrollTop <= 1;
+      if (!canPull) return;
+      if (dy < 8 && !drag.moving) return;
+
+      if (!drag.moving) {
+        drag.moving = true;
+        drag.y = event.clientY;
+        dy = 0;
+        el.style.overflowY = "hidden";
+        try { el.setPointerCapture(event.pointerId); } catch (err) {}
+      }
+
+      if (dy < 0) dy = 0;
+      // Лёгкий «резиновый» ход шторки.
+      var pull = dy < 120 ? dy : 120 + (dy - 120) * 0.35;
       drag.dy = dy;
+      drag.pull = pull;
       el.style.transition = "none";
-      el.style.transform = "translateY(" + dy + "px)";
-      scrim.style.opacity = String(Math.max(0.08, 1 - dy / 420));
+      el.style.transform = "translateY(" + pull + "px)";
+      scrim.style.transition = "none";
+      scrim.style.opacity = String(Math.max(0.05, 1 - pull / 380));
       if (event.cancelable) event.preventDefault();
     }, { passive: false });
 
     function endDrag(event) {
       if (!drag || drag.id !== event.pointerId) return;
-      var dy = drag.dy;
+      var dy = drag.dy || 0;
       var moving = drag.moving;
+      var velocity = drag.velocity || 0;
+      releaseCapture(event.pointerId);
       drag = null;
-      try { el.releasePointerCapture(event.pointerId); } catch (err) {}
-      scrim.style.opacity = "";
       if (!moving) {
-        el.style.transform = "";
-        el.style.transition = "";
+        el.style.overflowY = "auto";
         return;
       }
-      if (dy > 110) {
-        el.style.transition = "transform 0.24s ease-out";
-        el.style.transform = "translateY(110%)";
-        window.setTimeout(function () {
-          el.style.transform = "";
-          el.style.transition = "";
-          hideOverlays();
-        }, 240);
-        return;
-      }
-      el.style.transition = "transform 0.2s ease-out";
-      el.style.transform = "translateY(0)";
-      window.setTimeout(function () {
-        el.style.transform = "";
-        el.style.transition = "";
-      }, 200);
+      var threshold = Math.min(140, overlayMaxHeightPx() * 0.18);
+      if (dy > threshold || velocity > 0.7) dismiss(dy);
+      else snapBack();
     }
 
     el.addEventListener("pointerup", endDrag);
@@ -962,10 +1019,12 @@
       el.style.paddingBottom = "max(0.75rem, env(safe-area-inset-bottom, 0px))";
       el.style.touchAction = "pan-y";
       ensureSheetScrollSize(el);
+      ensureSheetGrabber(el);
       bindSheetSwipe(el);
     }
     scrim.style.display = "block";
     scrim.style.opacity = "";
+    scrim.style.transition = "";
   }
 
   function sharpenDeviceListButton(sheet) {
