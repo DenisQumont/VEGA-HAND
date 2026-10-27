@@ -10,6 +10,8 @@
     }).catch(function () {});
   }
 
+  var APP_VERSION = "1.0.0";
+
   var ROUTES = {
     "Главная": "ProfileHandShacke.html",
     "Контакты": "Contact.html",
@@ -19,7 +21,8 @@
     "Сервисный режим": "Service.html",
     "Карта схватов": "GripMap.html",
     "Добавить схват": "AddGrip.html",
-    "Добавить протез": "AddProfile.html"
+    "Добавить протез": "AddProfile.html",
+    "Расширенные настройки": "AdvancedSettings.html"
   };
 
   function normalize(value) {
@@ -43,6 +46,10 @@
 
   function go(file) {
     if (file === "ProfileHandShacke.html" && !prosthesisConnected()) file = "AddProfile.html";
+    if ((file === "Monitor.html" || file === "Service.html") && !prosthesisConnected()) {
+      toast("Сначала подключите протез", 4000);
+      return;
+    }
     if (window.parent !== window) {
       window.parent.postMessage({ type: "vega-nav", file: file }, "*");
       return;
@@ -146,11 +153,24 @@
     if (bleState.grip != null) {
       var gripName = document.getElementById("34_230_0_1");
       if (gripName) {
-        gripName.textContent = "Активный схват: " + (bleState.gripName || ("Схват " + bleState.grip));
-        gripName.style.fontSize = "0.75rem";
+        var gripLabel = bleState.gripName || ("Схват " + bleState.grip);
+        gripName.textContent = "Активный схват: " + gripLabel;
+        gripName.style.whiteSpace = "nowrap";
+        gripName.style.display = "inline-block";
+        gripName.style.maxWidth = "100%";
+        var longGrip = /Пользовательский схват №/.test(gripLabel);
+        gripName.style.fontSize = longGrip ? "0.625rem" : "0.75rem";
+        gripName.style.letterSpacing = longGrip ? "0" : "0.0156rem";
+        var gripLine = gripName.parentElement;
+        if (gripLine) {
+          gripLine.style.whiteSpace = "nowrap";
+          gripLine.style.overflow = "hidden";
+        }
       }
       paintText("34_230_1_1", "Номер схвата: " + bleState.grip);
     }
+    paintLockedNav();
+    paintAppVersion();
     var trigger = document.getElementById("34_815");
     if (trigger) {
       trigger.style.backgroundImage = "none";
@@ -168,6 +188,33 @@
     paintText("34_468", bleState.hardware);
     paintText("34_471", bleState.software);
     paintText("34_474", bleState.firmware);
+  }
+
+  function paintAppVersion() {
+    paintText("34_224", "VEGA ToolHand v" + APP_VERSION);
+    paintText("34_401", "VEGA ToolHand v" + APP_VERSION);
+    paintText("35_649", "v" + APP_VERSION);
+  }
+
+  function paintLockedNav() {
+    var locked = !prosthesisConnected();
+    var nodes = document.querySelectorAll("p");
+    for (var i = 0; i < nodes.length; i++) {
+      var label = normalize(nodes[i].textContent);
+      if (label !== "Мониторинг" && label !== "Сервисный режим") continue;
+      var shell = nodes[i];
+      while (shell && shell !== document.body) {
+        var style = shell.getAttribute("style") || "";
+        var tab = label === "Мониторинг" && style.indexOf("height: 3.625rem") !== -1;
+        var service = label === "Сервисный режим" && (shell.id === "39_1" || style.indexOf("height: 3.3125rem") !== -1 && style.indexOf("width: 13.3125rem") !== -1);
+        if (tab || service || (label === "Сервисный режим" && shell.id === "39_1")) {
+          shell.style.opacity = locked ? "0.4" : "";
+          shell.style.filter = locked ? "grayscale(0.4)" : "";
+          break;
+        }
+        shell = shell.parentElement;
+      }
+    }
   }
 
   function ensureDevicePicker() {
@@ -761,12 +808,38 @@
   var stubDialog = null;
 
   function hideOverlays() {
-    sheets.forEach(function (el) { el.style.display = "none"; });
+    sheets.forEach(function (el) {
+      el.style.display = "none";
+      el.style.transform = "";
+      el.style.transition = "";
+    });
     if (valueDialog) valueDialog.style.display = "none";
     if (stubDialog) stubDialog.style.display = "none";
     var devices = document.getElementById("vega-devices");
     if (devices) devices.style.display = "none";
     scrim.style.display = "none";
+    scrim.style.opacity = "";
+  }
+
+  function fitAdvancedSettingsButton() {
+    var label = document.getElementById("34_164");
+    if (!label) return;
+    label.textContent = "Расширенные настройки";
+    label.style.width = "6.6rem";
+    label.style.height = "2.4rem";
+    label.style.left = "0.5rem";
+    label.style.top = "0.75rem";
+    label.style.lineHeight = "1.1rem";
+    label.style.fontSize = "0.8125rem";
+    label.style.whiteSpace = "normal";
+    var box = document.getElementById("34_230");
+    if (box) {
+      box.style.width = "18.75rem";
+      box.style.left = "0.625rem";
+      box.style.right = "auto";
+      box.style.marginLeft = "0";
+      box.style.marginRight = "0";
+    }
   }
 
   function overlayMaxHeightPx() {
@@ -786,6 +859,75 @@
     sizer.style.cssText = "display:block;width:1px;height:41.25rem;pointer-events:none;visibility:hidden;";
   }
 
+  function bindSheetSwipe(el) {
+    if (el.getAttribute("data-vega-swipe") === "1") return;
+    el.setAttribute("data-vega-swipe", "1");
+    var drag = null;
+
+    function handleZonePx() {
+      return rootPx() * 5.5;
+    }
+
+    el.addEventListener("pointerdown", function (event) {
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      var rect = el.getBoundingClientRect();
+      var fromTop = event.clientY - rect.top;
+      if (fromTop > handleZonePx() && el.scrollTop > 2) return;
+      drag = { id: event.pointerId, y: event.clientY, dy: 0, moving: false };
+      try { el.setPointerCapture(event.pointerId); } catch (err) {}
+    });
+
+    el.addEventListener("pointermove", function (event) {
+      if (!drag || drag.id !== event.pointerId) return;
+      var dy = event.clientY - drag.y;
+      if (dy < 0) dy = 0;
+      if (!drag.moving && dy < 8) return;
+      if (el.scrollTop > 2 && dy > 0 && !drag.moving) {
+        drag = null;
+        return;
+      }
+      drag.moving = true;
+      drag.dy = dy;
+      el.style.transition = "none";
+      el.style.transform = "translateY(" + dy + "px)";
+      scrim.style.opacity = String(Math.max(0.08, 1 - dy / 420));
+      if (event.cancelable) event.preventDefault();
+    }, { passive: false });
+
+    function endDrag(event) {
+      if (!drag || drag.id !== event.pointerId) return;
+      var dy = drag.dy;
+      var moving = drag.moving;
+      drag = null;
+      try { el.releasePointerCapture(event.pointerId); } catch (err) {}
+      scrim.style.opacity = "";
+      if (!moving) {
+        el.style.transform = "";
+        el.style.transition = "";
+        return;
+      }
+      if (dy > 110) {
+        el.style.transition = "transform 0.24s ease-out";
+        el.style.transform = "translateY(110%)";
+        window.setTimeout(function () {
+          el.style.transform = "";
+          el.style.transition = "";
+          hideOverlays();
+        }, 240);
+        return;
+      }
+      el.style.transition = "transform 0.2s ease-out";
+      el.style.transform = "translateY(0)";
+      window.setTimeout(function () {
+        el.style.transform = "";
+        el.style.transition = "";
+      }, 200);
+    }
+
+    el.addEventListener("pointerup", endDrag);
+    el.addEventListener("pointercancel", endDrag);
+  }
+
   function pinOverlay(el, bottom) {
     if (el.parentElement !== document.body) document.body.appendChild(el);
     el.style.display = "block";
@@ -798,6 +940,8 @@
     el.style.bottom = bottom;
     el.style.width = "22.5rem";
     el.style.maxWidth = "100%";
+    el.style.transform = "";
+    el.style.transition = "";
     if (el.getAttribute("data-vega-sheet") || sheets.indexOf(el) !== -1) {
       var maxPx = overlayMaxHeightPx();
       el.style.height = maxPx + "px";
@@ -807,9 +951,12 @@
       el.style.webkitOverflowScrolling = "touch";
       el.style.boxSizing = "border-box";
       el.style.paddingBottom = "max(0.75rem, env(safe-area-inset-bottom, 0px))";
+      el.style.touchAction = "pan-y";
       ensureSheetScrollSize(el);
+      bindSheetSwipe(el);
     }
     scrim.style.display = "block";
+    scrim.style.opacity = "";
   }
 
   function sharpenDeviceListButton(sheet) {
@@ -1833,6 +1980,7 @@
     "Отправить": 1,
     "Пользовательский режим": 1,
     "Сервисный режим протеза": 1,
+    "Расширенные настройки": 1,
     "Персонализация": 1,
     "Параметры устройств": 1,
     "Параметры беспроводной связи": 1,
@@ -2168,6 +2316,9 @@
     bindSwitches();
     bindChecks();
     bindDocCards();
+    paintAppVersion();
+    paintLockedNav();
+    fitAdvancedSettingsButton();
     var profileNodes = document.querySelectorAll("#vega-root div");
     for (var profileIndex = 0; profileIndex < profileNodes.length; profileIndex++) {
       if (addProfileCard(profileNodes[profileIndex]) === profileNodes[profileIndex]) profileNodes[profileIndex].style.cursor = "pointer";
