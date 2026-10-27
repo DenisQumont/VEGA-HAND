@@ -155,17 +155,26 @@
       if (gripName) {
         var gripLabel = bleState.gripName || ("Схват " + bleState.grip);
         gripName.textContent = "Активный схват: " + gripLabel;
+        gripName.style.fontSize = "";
+        gripName.style.letterSpacing = "";
         gripName.style.whiteSpace = "nowrap";
         gripName.style.display = "inline-block";
-        gripName.style.maxWidth = "100%";
-        var longGrip = /Пользовательский схват №/.test(gripLabel);
-        gripName.style.fontSize = longGrip ? "0.625rem" : "0.75rem";
-        gripName.style.letterSpacing = longGrip ? "0" : "0.0156rem";
+        gripName.style.transformOrigin = "left center";
+        gripName.style.transform = "none";
         var gripLine = gripName.parentElement;
         if (gripLine) {
           gripLine.style.whiteSpace = "nowrap";
           gripLine.style.overflow = "hidden";
+          gripLine.style.maxWidth = "100%";
         }
+        window.requestAnimationFrame(function () {
+          if (!gripName.isConnected) return;
+          var avail = (gripLine && gripLine.clientWidth) || 0;
+          var need = gripName.scrollWidth;
+          if (avail > 0 && need > avail) {
+            gripName.style.transform = "scaleX(" + (avail / need) + ")";
+          }
+        });
       }
       paintText("34_230_1_1", "Номер схвата: " + bleState.grip);
     }
