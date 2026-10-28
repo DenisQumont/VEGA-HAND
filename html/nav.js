@@ -2237,7 +2237,7 @@
     ["34_843", "34_869"].forEach(function (id, index) {
       var node = document.getElementById(id);
       if (!node) return;
-      var mine = index === 0 ? !inverted : inverted;
+      var mine = index === 0 ? inverted : !inverted;
       node.textContent = mine ? openHand : closeHand;
       node.style.width = "8.75rem";
       node.style.whiteSpace = "nowrap";
