@@ -218,6 +218,15 @@ class Bridge:
             await self.client.write_gatt_char(MYO_WRITE_UUID, packet, response=False)
         await self.broadcast({"event": "myo", "values": unpack_myo(packet), "written": True})
 
+    async def send_myo_role(self):
+        if not self.client or not self.client.is_connected:
+            await self.broadcast({"event": "error", "message": "Протез не подключён"})
+            return
+        packet = bytearray(41)
+        packet[0] = 0x32
+        async with self.lock:
+            await self.client.write_gatt_char(INPUT_UUID, bytes(packet), response=False)
+
     async def set_mode(self, mode):
         code = SERVICE_MODE if mode == "service" else USER_MODE
         if mode not in ("service", "user"):
@@ -301,6 +310,8 @@ class Bridge:
                 await self.read_myo()
             elif command == "write_myo":
                 await self.write_myo(message.get("values") or {})
+            elif command == "myo_role":
+                await self.send_myo_role()
             elif command == "set_k":
                 await self.set_k(
                     int(message.get("sensor") or 0),

@@ -374,7 +374,7 @@
 
   function adcToMyoVolt(adc) {
     if (adc == null || isNaN(adc)) return null;
-    return adc * 3.3 * 7.1 / (4.7 * 4095) + 0.15;
+    return adc * 3.3 * 7.1 / (4.7 * 4095);
   }
 
   function adcToCellVolt(adc) {
@@ -399,6 +399,12 @@
     });
     view.setFloat32(33, coefficient1, true);
     view.setFloat32(37, coefficient2, true);
+    return view.buffer;
+  }
+
+  function packMyoRoleCommand() {
+    var view = new DataView(new ArrayBuffer(41));
+    view.setUint8(0, 0x32);
     return view.buffer;
   }
 
@@ -700,6 +706,8 @@
       }).then(function () {
         onBleEvent({ event: "myo", written: true });
       });
+    } else if (command === "myo_role") {
+      job = writePhone(phoneInput, packMyoRoleCommand());
     } else if (command === "set_k") {
       var k1 = payload.k1;
       var k2 = payload.k2;
@@ -875,6 +883,8 @@
       bleState.trigger = payload.trigger;
       if (payload.myo1 != null) bleState.myo1 = payload.myo1;
       if (payload.myo2 != null) bleState.myo2 = payload.myo2;
+      if (payload.myoMode != null) bleState.myoMode = payload.myoMode;
+      paintMyoRoles();
       if (payload.vbat != null) bleState.vbat = payload.vbat;
       if (payload.error !== bleState.error) {
         bleState.error = payload.error;
@@ -2178,11 +2188,12 @@
     for (var i = 0; i < nodes.length; i++) {
       if (nodes[i] === shell) continue;
       var style = nodes[i].getAttribute("style") || "";
+      var roleMark = style.indexOf("Rectangle19") !== -1;
       var box = nodes[i].getBoundingClientRect();
       var host = shell.getBoundingClientRect();
       var near = shell.contains(nodes[i]) || Math.abs(box.left - host.left) < 12;
-      if (!near) continue;
-      if (style.indexOf("Rectangle19") !== -1 || (style.indexOf("width: 1rem") !== -1 && style.indexOf("55.451183") !== -1)) {
+      if (!near && !roleMark) continue;
+      if (roleMark || (style.indexOf("width: 1rem") !== -1 && style.indexOf("55.451183") !== -1)) {
         nodes[i].setAttribute("data-vega-check", "1");
         return nodes[i];
       }
@@ -2219,12 +2230,50 @@
     });
   }
 
+  function paintMyoRoles() {
+    var inverted = Number(bleState.myoMode) === 1;
+    var openHand = "Раскрытие руки";
+    var closeHand = "Сжатие руки";
+    ["34_843", "34_869"].forEach(function (id, index) {
+      var node = document.getElementById(id);
+      if (!node) return;
+      var mine = index === 0 ? !inverted : inverted;
+      node.textContent = mine ? openHand : closeHand;
+      node.style.width = "8.75rem";
+      node.style.whiteSpace = "nowrap";
+    });
+    var shell = document.getElementById("34_846");
+    if (shell) setChecked(shell, inverted);
+  }
+
+  function bindMyoInvert() {
+    var shell = document.getElementById("34_846");
+    if (!shell || shell.dataset.vegaMyoBound === "1") return;
+    shell.dataset.vegaMyoBound = "1";
+    var host = shell.parentElement || shell;
+    host.style.cursor = "pointer";
+    host.addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!bleState.connected) {
+        toast("Протез не подключён");
+        return;
+      }
+      bleState.myoMode = Number(bleState.myoMode) === 1 ? 0 : 1;
+      paintMyoRoles();
+      bleRequest({ cmd: "myo_role" });
+    });
+  }
+
   function bindChecks() {
     var nodes = document.querySelectorAll("div");
     for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].id === "34_846") continue;
       if (!isCheckShell(nodes[i]) || isCheckShell(nodes[i].parentElement)) continue;
       bindOneCheck(nodes[i]);
     }
+    bindMyoInvert();
+    paintMyoRoles();
   }
 
   function paintChip(chip, on) {
@@ -2263,7 +2312,13 @@
   }
 
   function chartMaxVolt() {
-    return chipOn("34_804") ? 9 : 5;
+    return chipOn("34_804") ? 9 : 6;
+  }
+
+  function chartTimeTicks(sec) {
+    if (sec === 5) return [1, 2, 3, 4, 5];
+    if (sec === 30) return [5, 10, 15, 20, 25, 30];
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   }
 
   function clearAxisLabels(kind) {
@@ -2346,6 +2401,22 @@
     ctx.clearRect(0, 0, w, h);
 
     var maxV = chartMaxVolt();
+    ctx.save();
+    ctx.strokeStyle = "rgba(54,79,100,0.28)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var volt = 0; volt <= maxV; volt++) {
+      var gy = Math.round(h - (volt / maxV) * h) + 0.5;
+      ctx.moveTo(0, gy);
+      ctx.lineTo(w, gy);
+    }
+    chartTimeTicks(chartWindowSec).forEach(function (tick) {
+      var gx = Math.round((tick / chartWindowSec) * w) + 0.5;
+      ctx.moveTo(gx, 0);
+      ctx.lineTo(gx, h);
+    });
+    ctx.stroke();
+    ctx.restore();
     var winMs = chartWindowSec * 1000;
     var now = Date.now();
     var t0 = now - winMs;
@@ -2504,10 +2575,7 @@
     chartWindowSec = sec;
     clearAxisLabels("time");
     hideStockAxis(TIME_AXIS_IDS);
-    var values;
-    if (sec === 5) values = [1, 2, 3, 4, 5];
-    else if (sec === 30) values = [5, 10, 15, 20, 25, 30];
-    else values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    var values = chartTimeTicks(sec);
     var gridLeft = 1.5625;
     var gridWidth = 18.6875;
     var y = 15.0625;
