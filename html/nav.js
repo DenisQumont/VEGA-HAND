@@ -744,8 +744,9 @@
     var dialog = ensureDevicePicker();
     dialog.style.display = "block";
     dialog.style.position = "fixed";
-    dialog.style.zIndex = "6";
+    dialog.style.zIndex = "50";
     scrim.style.display = "block";
+    scrim.style.zIndex = "40";
     bleRequest({ cmd: "hello" });
   }
 
@@ -1266,7 +1267,7 @@
     if (el.parentElement !== document.body) document.body.appendChild(el);
     el.style.display = "block";
     el.style.position = "fixed";
-    el.style.zIndex = "6";
+    el.style.zIndex = "50";
     el.style.left = "0";
     el.style.right = "0";
     el.style.marginLeft = "auto";
@@ -1291,6 +1292,7 @@
       bindSheetSwipe(el);
     }
     scrim.style.display = "block";
+    scrim.style.zIndex = "40";
     scrim.style.opacity = "";
     scrim.style.transition = "";
   }
@@ -1363,7 +1365,6 @@
     sheets.forEach(function (el) { el.style.display = "none"; });
     if (stubDialog) stubDialog.style.display = "none";
     pinOverlay(valueDialog, "4.5rem");
-    valueDialog.style.zIndex = "6";
   }
 
   function ensureStub() {
