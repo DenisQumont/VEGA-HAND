@@ -883,8 +883,10 @@
       bleState.trigger = payload.trigger;
       if (payload.myo1 != null) bleState.myo1 = payload.myo1;
       if (payload.myo2 != null) bleState.myo2 = payload.myo2;
-      if (payload.myoMode != null) bleState.myoMode = payload.myoMode;
-      paintMyoRoles();
+      if (payload.myoMode != null) {
+        bleState.myoMode = payload.myoMode;
+        paintMyoRoles();
+      }
       if (payload.vbat != null) bleState.vbat = payload.vbat;
       if (payload.error !== bleState.error) {
         bleState.error = payload.error;
@@ -1029,10 +1031,57 @@
     });
   }
 
+  var restoringOverlayScroll = false;
+
+  function restoreOverlayScroll() {
+    if (!overlayScrollLock || restoringOverlayScroll) return;
+    if (document.body.style.position !== "fixed") return;
+    var y = overlayScrollLock.y || 0;
+    var top = "-" + y + "px";
+    if (document.body.style.top !== top) document.body.style.top = top;
+    var view = window.visualViewport;
+    var panned = view && Math.abs(view.offsetTop || 0) > 1;
+    var moved = (window.pageYOffset || 0) !== 0 || (document.documentElement.scrollTop || 0) !== 0 || panned;
+    if (!moved) return;
+    restoringOverlayScroll = true;
+    if (panned) window.scrollBy(0, -view.offsetTop);
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    restoringOverlayScroll = false;
+  }
+
+  function bindOverlayScrollGuard() {
+    if (window.__vegaOverlayScrollGuard) return;
+    window.__vegaOverlayScrollGuard = true;
+    function guard() {
+      if (overlayScrollLock) restoreOverlayScroll();
+    }
+    window.addEventListener("scroll", guard, true);
+    document.addEventListener("scroll", guard, true);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("scroll", guard);
+      window.visualViewport.addEventListener("resize", guard);
+    }
+  }
+
+  function focusNoScroll(field, select) {
+    if (!field) return;
+    try { field.focus({ preventScroll: true }); } catch (e) { try { field.focus(); } catch (e2) {} }
+    if (select) {
+      try { field.setSelectionRange(0, field.value.length); } catch (e3) {}
+    }
+    restoreOverlayScroll();
+    window.requestAnimationFrame(restoreOverlayScroll);
+    [40, 120, 280, 500].forEach(function (ms) {
+      window.setTimeout(restoreOverlayScroll, ms);
+    });
+  }
+
   function lockOverlayScroll() {
     if (overlayScrollLock) return;
-    var y = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    var y = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
     overlayScrollLock = { y: y };
+    bindOverlayScrollGuard();
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     document.body.style.position = "fixed";
@@ -1387,7 +1436,7 @@
       + '<p data-vega-stub-hint style="position:absolute;left:1.6875rem;top:5.35rem;width:17.25rem;margin:0;font-size:0.75rem;font-family:Roboto-Medium,sans-serif;font-weight:500;line-height:1rem;color:rgb(139,137,137);">Форма в разработке</p>'
       + '<div data-vega-stub-box style="position:absolute;left:1.625rem;top:7.15rem;width:17.375rem;height:2.625rem;border-radius:0.875rem;background:rgba(242,238,238,.6);border:0.125rem solid #dedede;box-sizing:border-box;">'
       + '<p data-vega-stub-placeholder style="position:absolute;left:1rem;top:0.85rem;margin:0;font-size:0.875rem;font-family:Roboto-Regular,sans-serif;color:rgb(139,139,139);"></p>'
-      + '<input data-vega-stub-field data-vega-number="1" type="text" inputmode="decimal" autocomplete="off" style="display:none;position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;padding:0 1rem;font-size:0.875rem;font-family:Roboto-Regular,sans-serif;color:#222;outline:none;z-index:2;"></div>'
+      + '<input data-vega-stub-field data-vega-number="1" type="text" inputmode="decimal" autocomplete="off" style="display:none;position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;padding:0 1rem;font-size:16px;font-family:Roboto-Regular,sans-serif;color:#222;outline:none;z-index:2;"></div>'
       + '<p data-vega-stub-note style="position:absolute;left:1.625rem;top:10.35rem;width:17.25rem;margin:0;font-size:0.75rem;font-family:Roboto-Medium,sans-serif;font-weight:500;color:rgb(139,137,137);">Заглушка, как у параметра в сервисных настройках</p>'
       + '<div data-vega-grip-picks="1" style="display:none;">'
       + '<p style="position:absolute;left:1.625rem;top:6.35rem;margin:0;font-size:0.75rem;font-family:Roboto-Medium,sans-serif;font-weight:500;color:rgb(139,137,137);">Схват 1</p>'
@@ -1543,9 +1592,7 @@
     dialog.style.transform = "none";
     placeStubInViewport(dialog);
     if (mode) {
-      window.setTimeout(function () {
-        try { field.focus({ preventScroll: true }); } catch (e) { try { field.focus(); } catch (e2) {} }
-      }, 30);
+      window.setTimeout(function () { focusNoScroll(field, true); }, 30);
     }
     return dialog;
   }
@@ -2259,8 +2306,6 @@
         toast("Протез не подключён");
         return;
       }
-      bleState.myoMode = Number(bleState.myoMode) === 1 ? 0 : 1;
-      paintMyoRoles();
       bleRequest({ cmd: "myo_role" });
     });
   }
@@ -2497,11 +2542,6 @@
         field.value = formatMyoK(current);
         field.dataset.vegaLast = field.value;
       }
-      window.setTimeout(function () {
-        try { field.focus({ preventScroll: true }); field.select(); } catch (e) {
-          try { field.focus(); field.select(); } catch (e2) {}
-        }
-      }, 30);
     }
   }
 
