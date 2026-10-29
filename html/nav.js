@@ -408,6 +408,12 @@
     return view.buffer;
   }
 
+  function packBleDisconCommand() {
+    var view = new DataView(new ArrayBuffer(41));
+    view.setUint8(0, 0x29);
+    return view.buffer;
+  }
+
   function packPhoneMyo(values) {
     var defaults = { dir_treshold: 105, TrigPercentTreshold: 2, TriggerBlocks: 50, TrigTresholdHigh: 945, TrigTresholdLow: 819, DifTriggerPlus: 50, DifTriggerMinus: 6, TrigDelayMax: 945, DifTrDelayMinus: 1, DifMovePlus: 3, DifMoveMinus: 2, MoveTresholdHigh: 315, MoveBlocks: 20, dead_Zone_Myo1: 250, dead_Zone_Myo2: 250 };
     var view = new DataView(new ArrayBuffer(30));
@@ -459,24 +465,87 @@
     onBleEvent({ event: "status", bridge: "phone", connected: false, reason: "disconnect" });
   }
 
-  function disconnectProsthesis() {
-    hideOverlays();
-    phoneBusy = true;
-    try {
-      if (window.__vegaBleDevice && window.__vegaBleDevice.gatt && window.__vegaBleDevice.gatt.connected) {
-        window.__vegaBleDevice.gatt.disconnect();
+  function writePhoneAck(char, data) {
+    if (!char) return Promise.reject(new Error("Протез не подключён"));
+    var write = char.writeValue || char.writeValueWithoutResponse;
+    if (!write) return Promise.reject(new Error("Протез не подключён"));
+    return gattCall(function () { return write.call(char, data); });
+  }
+
+  function waitForPhoneDrop(ms) {
+    return new Promise(function (resolve) {
+      var device = window.__vegaBleDevice;
+      if (!device || !device.gatt || !device.gatt.connected) {
+        resolve(true);
+        return;
       }
-    } catch (e) {}
+      var settled = false;
+      function done(dropped) {
+        if (settled) return;
+        settled = true;
+        device.removeEventListener("gattserverdisconnected", onDrop);
+        window.clearTimeout(timer);
+        resolve(!!dropped);
+      }
+      function onDrop() { done(true); }
+      device.addEventListener("gattserverdisconnected", onDrop);
+      var timer = window.setTimeout(function () { done(false); }, ms);
+    });
+  }
+
+  function finishPhoneDisconnect() {
     phoneServer = null;
     phoneInput = null;
     phoneMyoRead = null;
     phoneMyoWrite = null;
     phoneTelemetry = null;
-    phoneBusy = false;
-    bleState.battery = null; bleState.vbat = null;
+    bleState.battery = null;
+    bleState.vbat = null;
     forgetPhone();
     onBleEvent({ event: "status", bridge: "phone", connected: false, reason: "disconnect" });
     toast("Протез отключён", 3500);
+    window.setTimeout(function () { phoneBusy = false; }, 500);
+  }
+
+  function disconnectProsthesis() {
+    hideOverlays();
+    if (phoneBusy) return;
+    var device = window.__vegaBleDevice;
+    var gattUp = !!(device && device.gatt && device.gatt.connected && phoneInput);
+    if (!gattUp) {
+      if (bleState.connected) bleRequest({ cmd: "disconnect" });
+      phoneBusy = true;
+      finishPhoneDisconnect();
+      return;
+    }
+    phoneBusy = true;
+    var writeDone = false;
+    function afterDisconWrite() {
+      waitForPhoneDrop(1200).then(function (dropped) {
+        if (!dropped) {
+          try {
+            if (device.gatt && device.gatt.connected) device.gatt.disconnect();
+          } catch (e) {}
+        }
+        finishPhoneDisconnect();
+      });
+    }
+    var writeTimer = window.setTimeout(function () {
+      if (writeDone) return;
+      writeDone = true;
+      afterDisconWrite();
+    }, 800);
+    writePhoneAck(phoneInput, packBleDisconCommand()).then(function () {
+      if (writeDone) return;
+      writeDone = true;
+      window.clearTimeout(writeTimer);
+      afterDisconWrite();
+    }, function () {
+      if (writeDone) return;
+      writeDone = true;
+      window.clearTimeout(writeTimer);
+      afterDisconWrite();
+    });
   }
 
   function connectPhone(device, reason) {

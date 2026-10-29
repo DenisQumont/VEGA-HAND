@@ -284,8 +284,22 @@ class Bridge:
             await self.broadcast(self.status("disconnect"))
 
     async def disconnect(self):
+        client = self.client
+        if client is not None and client.is_connected:
+            packet = bytearray(41)
+            packet[0] = 0x29
+            try:
+                async with self.lock:
+                    if self.client is client and client.is_connected:
+                        await client.write_gatt_char(INPUT_UUID, bytes(packet), response=True)
+            except Exception:
+                pass
+            await asyncio.sleep(1.2)
+        if self.client is not client:
+            return
         async with self.lock:
-            await self._disconnect(quiet=False)
+            if self.client is client:
+                await self._disconnect(quiet=False)
 
     async def handle(self, socket, message):
         command = message.get("cmd")
