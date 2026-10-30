@@ -2180,10 +2180,10 @@
     var paramsH = showParams ? 45 : 0;
     var btnH = 3.5;
     var gap = 0.75;
+    var refresh = document.getElementById("vega-refresh-myo");
+    var modeBtn = document.getElementById("vega-mode-toggle");
     var buttonsTop = showParams ? paramsTop + paramsH + 0.6 : headerH + 0.75;
-    var buttons = showParams
-      ? [document.getElementById("vega-mode-toggle"), document.getElementById("vega-refresh-myo"), reset]
-      : [document.getElementById("vega-mode-toggle"), document.getElementById("vega-refresh-myo")];
+    var buttons = showParams ? [modeBtn, refresh, reset] : [modeBtn];
     var openH = buttonsTop + btnH * buttons.length + gap * Math.max(0, buttons.length - 1) + 0.6;
     var panelTop = 29.75;
     var panelH = devOpen ? openH : headerH;
@@ -2199,6 +2199,7 @@
     block.style.marginRight = "0";
     block.style.width = "20rem";
     reset.style.display = "none";
+    if (refresh) refresh.style.display = "none";
     buttons.forEach(function (el, index) {
       if (!el) return;
       el.style.display = devOpen ? "block" : "none";
@@ -3147,6 +3148,7 @@
     }
 
     if (label === "Обновить настройки протеза") {
+      if (!prosthesisServiceMode()) return;
       bleRequest({ cmd: "read_myo" });
       return;
     }
