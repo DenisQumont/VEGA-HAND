@@ -908,10 +908,15 @@
     if (!payload || !payload.event) return;
     if (payload.event === "status") {
       if (payload.bridge !== "phone" && phoneLink()) return;
+      var formWasOpen = !!bleState.connected && bleState.mode === "service";
       bleState.connected = !!payload.connected;
       bleState.bridge = !!payload.bridge;
       if (payload.mode) bleState.mode = payload.mode;
-      paintModeToggle();
+      var formOpen = !!bleState.connected && bleState.mode === "service";
+      if (payload.mode || formOpen !== formWasOpen) {
+        paintModeToggle();
+        if (formOpen !== formWasOpen) layoutService();
+      }
       if (payload.name) bleState.deviceName = payload.name;
       try {
         if (payload.connected) localStorage.setItem("vega-prosthesis", "1");
@@ -940,9 +945,14 @@
       return;
     }
     if (payload.event === "telemetry") {
+      var formWasOpen = !!bleState.connected && bleState.mode === "service";
       bleState.connected = true;
+      var previousMode = bleState.mode;
       bleState.mode = payload.mode || bleState.mode;
-      paintModeToggle();
+      if (bleState.mode !== previousMode || prosthesisServiceMode() !== formWasOpen) {
+        paintModeToggle();
+        layoutService();
+      }
       if (payload.k1 != null) bleState.k1 = payload.k1;
       if (payload.k2 != null) bleState.k2 = payload.k2;
       paintMonitorSensitivity();
@@ -995,6 +1005,7 @@
     }
     if (payload.event === "myo" && payload.written) {
       toast("Настройки миодатчиков отправлены");
+      window.setTimeout(function () { bleRequest({ cmd: "read_myo" }); }, 500);
       return;
     }
     if (payload.event === "mode") {
@@ -1937,7 +1948,12 @@
     return null;
   }
 
+  function prosthesisServiceMode() {
+    return !!bleState.connected && bleState.mode === "service";
+  }
+
   function openParam(row) {
+    if (!prosthesisServiceMode()) return;
     var spec = SERVICE_BY_ID[row.id];
     if (!spec) return;
     var current = String(loadParams()[spec.key]);
@@ -2158,27 +2174,32 @@
       return;
     }
     ensureDevTools();
+    var showParams = devOpen && prosthesisServiceMode();
     var headerH = 2.625;
     var paramsTop = 3;
-    var paramsH = 45;
+    var paramsH = showParams ? 45 : 0;
     var btnH = 3.5;
     var gap = 0.75;
-    var buttonsTop = paramsTop + paramsH + 0.6;
-    var openH = buttonsTop + btnH * 3 + gap * 2 + 0.6;
+    var buttonsTop = showParams ? paramsTop + paramsH + 0.6 : headerH + 0.75;
+    var buttons = showParams
+      ? [document.getElementById("vega-mode-toggle"), document.getElementById("vega-refresh-myo"), reset]
+      : [document.getElementById("vega-mode-toggle"), document.getElementById("vega-refresh-myo")];
+    var openH = buttonsTop + btnH * buttons.length + gap * Math.max(0, buttons.length - 1) + 0.6;
     var panelTop = 29.75;
     var panelH = devOpen ? openH : headerH;
     dev.style.top = panelTop + "rem";
     dev.style.height = panelH + "rem";
     dev.style.overflow = "hidden";
     if (bg) bg.style.height = panelH + "rem";
-    block.style.display = devOpen ? "block" : "none";
+    block.style.display = showParams ? "block" : "none";
     block.style.top = paramsTop + "rem";
     block.style.left = "0.47rem";
     block.style.right = "auto";
     block.style.marginLeft = "0";
     block.style.marginRight = "0";
     block.style.width = "20rem";
-    [document.getElementById("vega-mode-toggle"), document.getElementById("vega-refresh-myo"), reset].forEach(function (el, index) {
+    reset.style.display = "none";
+    buttons.forEach(function (el, index) {
       if (!el) return;
       el.style.display = devOpen ? "block" : "none";
       el.style.position = "absolute";
@@ -3131,6 +3152,7 @@
     }
 
     if (label === "Сброс настроек") {
+      if (!prosthesisServiceMode()) return;
       resetParams();
       return;
     }
