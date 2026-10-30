@@ -135,7 +135,7 @@
     return { text: "Подключен", color: "rgb(13,199,54)", btn: "rgb(55,90,118)" };
   }
 
-  var BATTERY_IDS = ["34_171", "34_478", "34_444", "35_714", "35_444", "34_821", "34_696"];
+  var BATTERY_IDS = ["34_171", "34_478", "34_444", "35_714", "34_821", "34_696", "35_304"];
   var DIS_STATUS_BTNS = ["34_451", "34_417", "35_687", "35_277", "35_523", "34_669"];
   var DIS_STATUS_LABELS = ["34_452", "34_418", "35_688", "35_278", "35_524", "34_670"];
   var DEVICE_NAME_IDS = ["34_170", "34_483", "34_825", "34_701", "34_449"];
@@ -911,6 +911,7 @@
       bleState.connected = !!payload.connected;
       bleState.bridge = !!payload.bridge;
       if (payload.mode) bleState.mode = payload.mode;
+      paintModeToggle();
       if (payload.name) bleState.deviceName = payload.name;
       try {
         if (payload.connected) localStorage.setItem("vega-prosthesis", "1");
@@ -941,6 +942,7 @@
     if (payload.event === "telemetry") {
       bleState.connected = true;
       bleState.mode = payload.mode || bleState.mode;
+      paintModeToggle();
       if (payload.k1 != null) bleState.k1 = payload.k1;
       if (payload.k2 != null) bleState.k2 = payload.k2;
       paintMonitorSensitivity();
@@ -1870,7 +1872,7 @@
     { id: "35_449", key: "TrigDelayMax", def: 945, name: "Максимальная задержка триигера" },
     { id: "35_450", key: "DifTrDelayMinus", def: 1, name: "Скорость уменьшения задержки" },
     { id: "35_442", key: "DifMovePlus", def: 3, name: "Скорость увеличения движения" },
-    { id: "35_444", key: "DifMoveMinus", def: 2, name: "Скорость уменьшения движения" },
+    { id: "35_444", key: "DifMoveMinus", def: 2, name: "Скорость уменьшения движения:" },
     { id: "35_446", key: "MoveTresholdHigh", def: 315, name: "Макс. значение переменной движения" },
     { id: "35_452", key: "MoveBlocks", def: 20, name: "Значение move, блокирующее триггеры" },
     { id: "35_454", key: "dead_Zone_Myo1", def: 250, name: "Зона нечувствительности MYO-1" },
@@ -2057,14 +2059,69 @@
     reset.parentElement.appendChild(button);
   }
 
-  function ensureProsthesisModeRow() {
-    var host = document.getElementById("35_468");
-    if (!host || document.getElementById("vega-mode-service")) return;
-    var row = document.createElement("p");
-    row.id = "vega-mode-service";
-    row.textContent = "Сервисный режим протеза";
-    row.style.cssText = "font-size:0.875rem;font-family:Roboto-Medium,sans-serif;font-weight:500;text-align:left;display:flex;flex-direction:column;justify-content:center;letter-spacing:0.0156rem;line-height:1.1rem;color:#000;width:19.25rem;height:1.75rem;position:absolute;left:1.1875rem;top:9.25rem;cursor:pointer;";
-    host.appendChild(row);
+  function paintModeToggle() {
+    var label = document.getElementById("vega-mode-toggle-label");
+    if (!label) return;
+    label.textContent = bleState.mode === "service"
+      ? "Переключить в пользовательский режим"
+      : "Переключить в сервисный режим";
+  }
+
+  function blockButton(id, text) {
+    var button = document.getElementById(id);
+    if (button) return button;
+    button = document.createElement("div");
+    button.id = id;
+    button.style.cssText = "position:absolute;left:1rem;width:18.75rem;height:3.5rem;cursor:pointer;";
+    var face = document.createElement("div");
+    face.style.cssText = "position:absolute;inset:0;border-radius:0.875rem;background:#fff;border:0.125rem solid #000;box-sizing:border-box;";
+    var label = document.createElement("p");
+    label.id = id + "-label";
+    label.textContent = text;
+    label.style.cssText = "position:absolute;left:0.55rem;right:0.55rem;top:0.3rem;bottom:0.3rem;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:0.875rem;font-family:Roboto-Medium,sans-serif;font-weight:500;line-height:1.1rem;color:rgba(0,0,0,.8);";
+    button.appendChild(face);
+    button.appendChild(label);
+    return button;
+  }
+
+  function ensureDevTools() {
+    var dev = document.getElementById("35_468");
+    var block = document.getElementById("35_410");
+    var reset = document.getElementById("35_473");
+    if (!dev || !block || !reset) return;
+    if (block.parentElement !== dev) dev.appendChild(block);
+    if (reset.parentElement !== dev) dev.appendChild(reset);
+    ["35_469", "35_470", "35_471"].forEach(function (id) {
+      var row = document.getElementById(id);
+      if (row) row.style.display = "none";
+    });
+    var stale = document.getElementById("vega-mode-service");
+    if (stale) stale.style.display = "none";
+    var mode = blockButton("vega-mode-toggle", "Переключить в сервисный режим");
+    var refresh = blockButton("vega-refresh-myo", "Обновить настройки протеза");
+    if (mode.parentElement !== dev) dev.appendChild(mode);
+    if (refresh.parentElement !== dev) dev.appendChild(refresh);
+    var face = document.getElementById("12_10");
+    if (face) {
+      face.style.width = "18.75rem";
+      face.style.height = "3.5rem";
+    }
+    var resetLabel = document.getElementById("12_11");
+    if (resetLabel) {
+      resetLabel.style.width = "17.5rem";
+      resetLabel.style.height = "2.5rem";
+      resetLabel.style.left = "0.625rem";
+      resetLabel.style.top = "0.5rem";
+      resetLabel.style.lineHeight = "1.15rem";
+    }
+    reset.style.width = "18.75rem";
+    reset.style.height = "3.5rem";
+    reset.style.left = "1rem";
+    reset.style.right = "auto";
+    reset.style.marginLeft = "0";
+    reset.style.marginRight = "0";
+    reset.style.cursor = "pointer";
+    paintModeToggle();
   }
 
   function exitServiceMode() {
@@ -2097,22 +2154,39 @@
     if (exitBtn) exitBtn.style.display = authed ? "" : "none";
     if (!authed) {
       art.style.height = "28rem";
+      block.style.display = "none";
       return;
     }
-    var collapse = devOpen ? 0 : 9;
-    var modeRow = document.getElementById("vega-mode-service");
-    dev.style.top = "76.625rem";
-    dev.style.height = (devOpen ? 11.625 : 2.625) + "rem";
+    ensureDevTools();
+    var headerH = 2.625;
+    var paramsTop = 3;
+    var paramsH = 45;
+    var btnH = 3.5;
+    var gap = 0.75;
+    var buttonsTop = paramsTop + paramsH + 0.6;
+    var openH = buttonsTop + btnH * 3 + gap * 2 + 0.6;
+    var panelTop = 29.75;
+    var panelH = devOpen ? openH : headerH;
+    dev.style.top = panelTop + "rem";
+    dev.style.height = panelH + "rem";
     dev.style.overflow = "hidden";
-    if (bg) bg.style.height = (devOpen ? 11.625 : 2.625) + "rem";
-    ["35_469", "35_470", "35_471"].forEach(function (id) {
-      var row = document.getElementById(id);
-      if (row) row.style.display = devOpen ? "" : "none";
+    if (bg) bg.style.height = panelH + "rem";
+    block.style.display = devOpen ? "block" : "none";
+    block.style.top = paramsTop + "rem";
+    block.style.left = "0.47rem";
+    block.style.right = "auto";
+    block.style.marginLeft = "0";
+    block.style.marginRight = "0";
+    block.style.width = "20rem";
+    [document.getElementById("vega-mode-toggle"), document.getElementById("vega-refresh-myo"), reset].forEach(function (el, index) {
+      if (!el) return;
+      el.style.display = devOpen ? "block" : "none";
+      el.style.position = "absolute";
+      el.style.left = "1rem";
+      el.style.top = (buttonsTop + index * (btnH + gap)) + "rem";
     });
-    if (modeRow) modeRow.style.display = devOpen ? "flex" : "none";
-    reset.style.top = (89.75 - collapse) + "rem";
-    if (exitBtn) exitBtn.style.top = (94.0625 - collapse) + "rem";
-    art.style.height = (108.25 - collapse) + "rem";
+    if (exitBtn) exitBtn.style.top = (panelTop + panelH + 1) + "rem";
+    art.style.height = (panelTop + panelH + 8) + "rem";
     if (header) header.style.cursor = "pointer";
     var chevron = document.getElementById("vega-dev-chevron");
     if (chevron) chevron.style.transform = devOpen ? "" : "rotate(180deg)";
@@ -3041,12 +3115,12 @@
       return;
     }
 
-    if (label === "Пользовательский режим") {
+    if (label === "Переключить в пользовательский режим" || label === "Пользовательский режим") {
       confirmMode("user");
       return;
     }
 
-    if (label === "Сервисный режим протеза") {
+    if (label === "Переключить в сервисный режим" || label === "Сервисный режим протеза") {
       confirmMode("service");
       return;
     }
@@ -3149,7 +3223,7 @@
     initPassword();
     wrapDevChevron();
     ensureExitButton();
-    ensureProsthesisModeRow();
+    ensureDevTools();
     layoutService();
     paintParamValues();
     bindSwitches();
