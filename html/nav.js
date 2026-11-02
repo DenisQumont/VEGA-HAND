@@ -341,9 +341,9 @@
     { name: "Жест \"Салют\"", photo: "Custom8", bg: "rgb(237,241,240)", aspect: 0.751, frameSize: "auto 169%", framePos: "49% 63%", speed: [0, 5, 5, 5, 0, 0], pos: [5, -5, -5, -5, 5, 5] },
     { name: "Жест \"Дуля\"", photo: "Custom9", bg: "rgb(236,241,239)", aspect: 0.751, frameSize: "auto 181%", framePos: "53% 66%", speed: [5, 5, 5, 5, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
     { name: "Доп. щепоть", photo: "Custom10", bg: "rgb(250,252,251)", aspect: 0.751, frameSize: "auto 151%", framePos: "46% 51%", speed: [0, 0, 5, 5, 0, 5], pos: [5, 5, -5, -5, 5, -5] },
-    { name: "Жест \"Три\"", photo: "Custom11", bg: "rgb(250,254,253)", aspect: 0.751, frameSize: "auto 135%", framePos: "62% 42%", speed: [5, 0, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
-    { name: "Пассивный хват", photo: "Custom12", bg: "rgb(250,254,253)", aspect: 0.751, frameSize: "auto 135%", framePos: "62% 42%", speed: [5, 5, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
-    { name: "Звонок", photo: "Custom13", bg: "rgb(229,233,232)", aspect: 0.751, frameSize: "auto 135%", framePos: "55% 38%", speed: [0, 5, 5, 5, 0, -5], pos: [-5, -5, -5, -5, -5, 5] }
+    { name: "Жест \"Три\"", photo: "Custom11", bg: "rgb(250,254,253)", aspect: 0.751, frameSize: "auto 164%", framePos: "68% 59%", speed: [5, 0, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
+    { name: "Пассивный хват", photo: "Custom12", bg: "rgb(250,254,253)", aspect: 0.751, frameSize: "auto 164%", framePos: "68% 59%", speed: [5, 5, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
+    { name: "Звонок", photo: "Custom13", bg: "rgb(229,233,232)", aspect: 0.751, frameSize: "auto 163%", framePos: "56% 58%", speed: [0, 5, 5, 5, 0, -5], pos: [-5, -5, -5, -5, -5, 5] }
   ];
   var PHONE_MYO_KEYS = ["dir_treshold", "TrigPercentTreshold", "TriggerBlocks", "TrigTresholdHigh", "TrigTresholdLow", "DifTriggerPlus", "DifTriggerMinus", "TrigDelayMax", "DifTrDelayMinus", "DifMovePlus", "DifMoveMinus", "MoveTresholdHigh", "MoveBlocks", "dead_Zone_Myo1", "dead_Zone_Myo2"];
   var phoneServer = null;
