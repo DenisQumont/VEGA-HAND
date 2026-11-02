@@ -341,9 +341,9 @@
     { name: "Жест \"Салют\"", photo: "Custom8", bg: "rgb(237,241,240)", aspect: 1.332, focus: 0.42, speed: [0, 5, 5, 5, 0, 0], pos: [5, -5, -5, -5, 5, 5] },
     { name: "Жест \"Дуля\"", photo: "Custom9", bg: "rgb(236,241,239)", aspect: 1.332, focus: 0.4, speed: [5, 5, 5, 5, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
     { name: "Дополнительный щепоть", photo: "Custom10", bg: "rgb(250,252,251)", aspect: 0.751, speed: [0, 0, 5, 5, 0, 5], pos: [5, 5, -5, -5, 5, -5] },
-    { name: "Жест \"Три\"", photo: "Custom11", bg: "rgb(250,254,253)", aspect: 1.332, focus: 0.435, speed: [5, 0, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
-    { name: "Пассивный хват", photo: "Custom12", bg: "rgb(250,254,253)", aspect: 1.332, focus: 0.435, speed: [5, 5, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
-    { name: "Звонок", photo: "Custom13", bg: "rgb(229,233,232)", aspect: 0.751, speed: [0, 5, 5, 5, 0, -5], pos: [-5, -5, -5, -5, -5, 5] }
+    { name: "Жест \"Три\"", photo: "Custom11", bg: "rgb(250,254,253)", aspect: 0.751, frameSize: "auto 135%", framePos: "62% 42%", speed: [5, 0, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
+    { name: "Пассивный хват", photo: "Custom12", bg: "rgb(250,254,253)", aspect: 0.751, frameSize: "auto 135%", framePos: "62% 42%", speed: [5, 5, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
+    { name: "Звонок", photo: "Custom13", bg: "rgb(229,233,232)", aspect: 0.751, frameSize: "auto 135%", framePos: "55% 38%", speed: [0, 5, 5, 5, 0, -5], pos: [-5, -5, -5, -5, -5, 5] }
   ];
   var PHONE_MYO_KEYS = ["dir_treshold", "TrigPercentTreshold", "TriggerBlocks", "TrigTresholdHigh", "TrigTresholdLow", "DifTriggerPlus", "DifTriggerMinus", "TrigDelayMax", "DifTrDelayMinus", "DifMovePlus", "DifMoveMinus", "MoveTresholdHigh", "MoveBlocks", "dead_Zone_Myo1", "dead_Zone_Myo2"];
   var phoneServer = null;
@@ -1811,6 +1811,7 @@
       var photoHeight = wide ? "8.1rem" : (6.125 / preset.aspect).toFixed(3) + "rem";
       var bgSize = "100% 100%";
       var bgPos = "center center";
+      var mask = wide ? "14%" : "28%";
       if (wide) {
         var visible = 6.125 / (8.1 * preset.aspect);
         var align = (preset.focus - visible / 2) / (1 - visible);
@@ -1819,8 +1820,14 @@
         bgSize = "auto 100%";
         bgPos = (align * 100).toFixed(1) + "% center";
       }
+      if (preset.frameSize) {
+        photoHeight = "10.625rem";
+        bgSize = preset.frameSize;
+        bgPos = preset.framePos;
+        mask = "";
+      }
       var photo = document.createElement("div");
-      photo.style.cssText = "position:absolute;left:0;right:0;bottom:0;height:" + photoHeight + ";background-color:" + preset.bg + ";background-image:url(../grip_img/" + preset.photo + ".JPG);background-size:" + bgSize + ";background-position:" + bgPos + ";background-repeat:no-repeat;-webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 " + (wide ? "14%" : "28%") + ");mask-image:linear-gradient(to bottom, transparent 0%, #000 " + (wide ? "14%" : "28%") + ");";
+      photo.style.cssText = "position:absolute;left:0;right:0;bottom:0;height:" + photoHeight + ";background-color:" + preset.bg + ";background-image:url(../grip_img/" + preset.photo + ".JPG);background-size:" + bgSize + ";background-position:" + bgPos + ";background-repeat:no-repeat;" + (mask ? "-webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 " + mask + ");mask-image:linear-gradient(to bottom, transparent 0%, #000 " + mask + ");" : "");
       var title = document.createElement("p");
       title.textContent = preset.name;
       title.style.cssText = "position:absolute;left:0.5rem;right:0.4rem;top:0.45rem;margin:0;z-index:2;font-size:0.75rem;font-family:Roboto-Medium,sans-serif;font-weight:500;text-align:left;line-height:0.95rem;color:rgb(34,34,34);";
