@@ -22,7 +22,8 @@
     "Карта схватов": "GripMap.html",
     "Добавить схват": "AddGrip.html",
     "Добавить протез": "AddProfile.html",
-    "Расширенные настройки": "AdvancedSettings.html"
+    "Расширенные настройки": "AdvancedSettings.html",
+    "Дополнительные функции": "AdvancedSettings.html"
   };
 
   function normalize(value) {
@@ -328,6 +329,22 @@
   var PHONE_MYO_WRITE = "55865178-6434-3234-1251-13645973aa04";
   var PHONE_SERIAL = "55865178-6434-3234-1251-13645973aa07";
   var PHONE_GRIPS = ["Раскрытая ладонь", "Нейтральный схват", "Силовой схват", "Кулачный схват", "Схват удержания чашки", "Удерживающий схват", "Цилиндрический схват", "Плоская ладонь", "Схват для нажатия", "Указательный жест", "Схват удержания карты", "Трехпалый щепоть", "Двухпалый щепоть", "Боковой схват", "Закрытый схват", "Пользовательский схват №1", "Пользовательский схват №2"];
+  var UNKNOWN_GRIP = "Неизвестный схват";
+  var GRIP_PRESETS = [
+    { name: "Жест \"Коза\"", photo: "Custom1", speed: [0, 5, 5, 0, 0, 0], pos: [-5, 5, 5, -5, -5, -5] },
+    { name: "Жест \"Закрытая коза\"", photo: "Custom2", speed: [5, 0, 0, 5, 0, 5], pos: [-5, 5, 5, -5, -5, 5] },
+    { name: "Жест \"Джамбо\"", photo: "Custom3", speed: [5, 0, 0, 0, 0, 5], pos: [-5, 5, 5, 5, -5, -5] },
+    { name: "Быстрый щепоть", photo: "Custom4", speed: [0, 0, 0, 5, 0, 5], pos: [-5, -5, -5, -5, 5, -5] },
+    { name: "Жест \"Скидыщ\"", photo: "Custom5", speed: [5, 0, 0, 0, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
+    { name: "Жест \"Класс\"", photo: "Custom6", speed: [0, 0, 0, 0, 0, 5], pos: [5, 5, 5, 5, -5, 5] },
+    { name: "Жест \"Ножницы\"", photo: "Custom7", speed: [0, 0, 5, 5, 0, 0], pos: [5, 5, -5, -5, 5, 5] },
+    { name: "Жест \"Салют\"", photo: "Custom8", speed: [0, 5, 5, 5, 0, 0], pos: [5, -5, -5, -5, 5, 5] },
+    { name: "Жест \"Дуля\"", photo: "Custom9", speed: [5, 5, 5, 5, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
+    { name: "Дополнительный щепоть", photo: "Custom10", speed: [0, 0, 5, 5, 0, 5], pos: [5, 5, -5, -5, 5, -5] },
+    { name: "Жест \"Три\"", photo: "Custom11", speed: [5, 0, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
+    { name: "Пассивный хват", photo: "Custom12", speed: [5, 5, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
+    { name: "Звонок", photo: "Custom13", speed: [0, 5, 5, 5, 0, -5], pos: [-5, -5, -5, -5, -5, 5] }
+  ];
   var PHONE_MYO_KEYS = ["dir_treshold", "TrigPercentTreshold", "TriggerBlocks", "TrigTresholdHigh", "TrigTresholdLow", "DifTriggerPlus", "DifTriggerMinus", "TrigDelayMax", "DifTrDelayMinus", "DifMovePlus", "DifMoveMinus", "MoveTresholdHigh", "MoveBlocks", "dead_Zone_Myo1", "dead_Zone_Myo2"];
   var phoneServer = null;
   var phoneInput = null;
@@ -394,7 +411,10 @@
     var lists = [source.custom1Speed, source.custom1Pos, source.custom2Speed, source.custom2Pos];
     var offset = 9;
     lists.forEach(function (list) {
-      for (var i = 0; i < 6; i++) view.setInt8(offset + i, list && list[i] ? list[i] : 0);
+      for (var i = 0; i < 6; i++) {
+        var finger = list && list.length > i && list[i] != null ? Number(list[i]) : 0;
+        view.setInt8(offset + i, isNaN(finger) ? 0 : finger);
+      }
       offset += 6;
     });
     view.setFloat32(33, coefficient1, true);
@@ -777,6 +797,30 @@
       });
     } else if (command === "myo_role") {
       job = writePhone(phoneInput, packMyoRoleCommand());
+    } else if (command === "load_grips") {
+      var gripSource = {};
+      if (phoneTelemetry) {
+        Object.keys(phoneTelemetry).forEach(function (key) { gripSource[key] = phoneTelemetry[key]; });
+      }
+      gripSource.custom1Speed = payload.custom1Speed;
+      gripSource.custom1Pos = payload.custom1Pos;
+      gripSource.custom2Speed = payload.custom2Speed;
+      gripSource.custom2Pos = payload.custom2Pos;
+      gripSource.k1 = bleState.k1;
+      gripSource.k2 = bleState.k2;
+      job = writePhone(phoneInput, packPhoneInput(0x20, gripSource)).then(function () {
+        bleState.custom1Speed = payload.custom1Speed.slice();
+        bleState.custom1Pos = payload.custom1Pos.slice();
+        bleState.custom2Speed = payload.custom2Speed.slice();
+        bleState.custom2Pos = payload.custom2Pos.slice();
+        if (phoneTelemetry) {
+          phoneTelemetry.custom1Speed = bleState.custom1Speed.slice();
+          phoneTelemetry.custom1Pos = bleState.custom1Pos.slice();
+          phoneTelemetry.custom2Speed = bleState.custom2Speed.slice();
+          phoneTelemetry.custom2Pos = bleState.custom2Pos.slice();
+        }
+        onBleEvent({ event: "grips", message: "Схваты отправлены на протез" });
+      });
     } else if (command === "set_k") {
       var k1 = payload.k1;
       var k2 = payload.k2;
@@ -925,6 +969,10 @@
       if (!payload.connected) {
         bleState.battery = null;
         bleState.vbat = null;
+        bleState.custom1Speed = null;
+        bleState.custom1Pos = null;
+        bleState.custom2Speed = null;
+        bleState.custom2Pos = null;
       }
       paintLink();
       if (payload.connected) hideToast();
@@ -955,6 +1003,10 @@
       }
       if (payload.k1 != null) bleState.k1 = payload.k1;
       if (payload.k2 != null) bleState.k2 = payload.k2;
+      if (payload.custom1Speed) bleState.custom1Speed = payload.custom1Speed.slice();
+      if (payload.custom1Pos) bleState.custom1Pos = payload.custom1Pos.slice();
+      if (payload.custom2Speed) bleState.custom2Speed = payload.custom2Speed.slice();
+      if (payload.custom2Pos) bleState.custom2Pos = payload.custom2Pos.slice();
       paintMonitorSensitivity();
       if (payload.state != null) bleState.prosthesisState = payload.state;
       if (payload.grip != null) {
@@ -1010,6 +1062,14 @@
     }
     if (payload.event === "mode") {
       toast(payload.message || "Режим отправлен");
+      return;
+    }
+    if (payload.event === "grips") {
+      if (payload.custom1Speed) bleState.custom1Speed = payload.custom1Speed.slice();
+      if (payload.custom1Pos) bleState.custom1Pos = payload.custom1Pos.slice();
+      if (payload.custom2Speed) bleState.custom2Speed = payload.custom2Speed.slice();
+      if (payload.custom2Pos) bleState.custom2Pos = payload.custom2Pos.slice();
+      toast(payload.message || "Схваты отправлены на протез");
       return;
     }
     if (payload.event === "k") {
@@ -1238,13 +1298,13 @@
   function fitAdvancedSettingsButton() {
     var label = document.getElementById("34_164");
     if (!label) return;
-    label.textContent = "Расширенные настройки";
+    label.textContent = "Дополнительные функции";
     label.style.width = "6.6rem";
     label.style.height = "2.4rem";
     label.style.left = "0.5rem";
     label.style.top = "0.75rem";
-    label.style.lineHeight = "1.1rem";
-    label.style.fontSize = "0.8125rem";
+    label.style.lineHeight = "1rem";
+    label.style.fontSize = "0.75rem";
     label.style.whiteSpace = "normal";
     var box = document.getElementById("34_230");
     if (box) {
@@ -1679,61 +1739,138 @@
     return dialog;
   }
 
-  function gripNames() {
-    var names = [];
-    var row = document.getElementById("vega-grips");
-    if (row) {
-      var cards = row.children;
-      for (var i = 0; i < cards.length; i++) {
-        var text = normalize(cards[i].innerText);
-        if (!text || text === "Добавить схват") continue;
-        names.push(text);
-      }
+  function gripPresetByName(name) {
+    var key = normalize(name);
+    for (var i = 0; i < GRIP_PRESETS.length; i++) {
+      if (GRIP_PRESETS[i].name === key) return GRIP_PRESETS[i];
     }
-    return names.length ? names : ["Жест Джамбо", "Жест Коза", "Схват Ключа"];
+    return null;
   }
 
-  function gripChoice() {
-    try { return JSON.parse(localStorage.getItem("vega-grip-load") || "{}"); }
-    catch (e) { return {}; }
+  function gripAxisSame(got, expected, signed) {
+    if (!got || !expected) return false;
+    for (var i = 0; i < 6; i++) {
+      var actual = Number(got[i]);
+      var wanted = Number(expected[i]);
+      if (signed) wanted = wanted === 0 ? 0 : (wanted > 0 ? 1 : -1);
+      if (actual !== wanted) return false;
+    }
+    return true;
   }
 
-  function fillGripSelect(select, names, chosen) {
+  function matchGripPreset(speed, pos) {
+    if (!speed || !pos) return null;
+    for (var i = 0; i < GRIP_PRESETS.length; i++) {
+      var preset = GRIP_PRESETS[i];
+      var exact = gripAxisSame(speed, preset.speed, false) && gripAxisSame(pos, preset.pos, false);
+      var signed = gripAxisSame(speed, preset.speed, true) && gripAxisSame(pos, preset.pos, true);
+      if (exact || signed) return preset;
+    }
+    return null;
+  }
+
+  function gripSlotNow(speedKey, posKey) {
+    var speed = bleState[speedKey];
+    var pos = bleState[posKey];
+    var known = !!(speed && pos);
+    var preset = known ? matchGripPreset(speed, pos) : null;
+    return {
+      name: preset ? preset.name : UNKNOWN_GRIP,
+      known: known,
+      speed: known ? speed.slice(0, 6) : null,
+      pos: known ? pos.slice(0, 6) : null
+    };
+  }
+
+  function fillGripSelect(select, chosen, slot) {
     select.innerHTML = "";
+    var names = [UNKNOWN_GRIP];
+    GRIP_PRESETS.forEach(function (preset) { names.push(preset.name); });
     names.forEach(function (name) {
       var option = document.createElement("option");
       option.value = name;
       option.textContent = name;
       select.appendChild(option);
     });
-    if (names.indexOf(chosen) !== -1) select.value = chosen;
-    else if (names.length) select.value = names[0];
+    select.value = names.indexOf(chosen) === -1 ? UNKNOWN_GRIP : chosen;
+    select.dataset.vegaKnown = slot && slot.known ? "1" : "0";
+    select.dataset.vegaVectors = JSON.stringify(slot && slot.known ? { speed: slot.speed, pos: slot.pos } : null);
+  }
+
+  function renderGripLibrary() {
+    var row = document.getElementById("vega-grips");
+    if (!row || row.dataset.vegaBuilt === "1") return;
+    var add = document.getElementById("34_219");
+    GRIP_PRESETS.forEach(function (preset) {
+      var card = document.createElement("div");
+      card.setAttribute("data-vega-grip-card", preset.name);
+      card.style.cssText = "position:relative;flex:0 0 6.125rem;isolation:isolate;width:6.125rem;height:10.625rem;cursor:pointer;";
+      var face = document.createElement("div");
+      face.style.cssText = "width:100%;height:100%;overflow:hidden;position:relative;border-radius:0.625rem;z-index:1;background:#fff;";
+      var photo = document.createElement("div");
+      photo.style.cssText = "position:absolute;left:0.2rem;right:0.2rem;top:2.45rem;bottom:0.35rem;background-image:url(../grip_img/" + preset.photo + ".JPG);background-size:contain;background-repeat:no-repeat;background-position:center bottom;";
+      var title = document.createElement("p");
+      title.textContent = preset.name;
+      title.style.cssText = "font-size:0.75rem;font-family:Roboto-Medium,sans-serif;font-weight:500;text-align:left;line-height:0.95rem;color:rgb(34,34,34);width:5.3rem;height:2.15rem;position:absolute;left:0.4rem;top:0.35rem;margin:0;z-index:2;";
+      var border = document.createElement("div");
+      border.style.cssText = "position:absolute;inset:0;border-radius:0.625rem;pointer-events:none;z-index:0;border:0.125rem solid rgb(34,34,34);box-sizing:border-box;";
+      face.appendChild(photo);
+      face.appendChild(title);
+      card.appendChild(face);
+      card.appendChild(border);
+      if (add) row.insertBefore(card, add);
+      else row.appendChild(card);
+    });
+    row.dataset.vegaBuilt = "1";
   }
 
   function openGripLoad() {
     pendingMode = "";
     editingSensor = "";
-    var names = gripNames();
-    var saved = gripChoice();
     var dialog = openStub("Загрузить схваты", "Выберите два схвата из библиотеки", "", "Отправить", " ", "");
     dialog.dataset.vegaGrip = "1";
     dialog.querySelector("[data-vega-stub-box]").style.display = "none";
     dialog.querySelector("[data-vega-stub-note]").style.display = "none";
     var picks = dialog.querySelector("[data-vega-grip-picks]");
     picks.style.display = "block";
-    var fallbackB = names[Math.min(1, names.length - 1)] || "";
-    fillGripSelect(picks.querySelector("[data-vega-grip-a]"), names, saved.a || names[0] || "");
-    fillGripSelect(picks.querySelector("[data-vega-grip-b]"), names, saved.b || fallbackB);
+    var slotA = gripSlotNow("custom1Speed", "custom1Pos");
+    var slotB = gripSlotNow("custom2Speed", "custom2Pos");
+    fillGripSelect(picks.querySelector("[data-vega-grip-a]"), slotA.name, slotA);
+    fillGripSelect(picks.querySelector("[data-vega-grip-b]"), slotB.name, slotB);
+  }
+
+  function gripChoiceVectors(select) {
+    var preset = gripPresetByName(select.value);
+    if (preset) return { speed: preset.speed.slice(), pos: preset.pos.slice() };
+    if (select.dataset.vegaKnown !== "1") return null;
+    try { return JSON.parse(select.dataset.vegaVectors || "null"); }
+    catch (e) { return null; }
   }
 
   function saveGripLoad() {
     var dialog = document.getElementById("vega-stub");
-    if (!dialog || dialog.dataset.vegaGrip !== "1") return;
+    if (!dialog || dialog.dataset.vegaGrip !== "1") return true;
     var a = dialog.querySelector("[data-vega-grip-a]");
     var b = dialog.querySelector("[data-vega-grip-b]");
-    try { localStorage.setItem("vega-grip-load", JSON.stringify({ a: a.value, b: b.value })); }
-    catch (e) {}
+    var gripA = gripChoiceVectors(a);
+    var gripB = gripChoiceVectors(b);
+    if (!gripA || !gripB) {
+      toast("На протезе нет считанной конфигурации для неизвестного схвата");
+      return false;
+    }
+    if (!prosthesisConnected()) {
+      toast("Протез не подключён");
+      return false;
+    }
     dialog.dataset.vegaGrip = "";
+    bleRequest({
+      cmd: "load_grips",
+      custom1Speed: gripA.speed,
+      custom1Pos: gripA.pos,
+      custom2Speed: gripB.speed,
+      custom2Pos: gripB.pos
+    });
+    return true;
   }
 
   function rootPx() {
@@ -3007,7 +3144,7 @@
       if (node.id === "35_459") return node;
       var box = inRem(node.getBoundingClientRect());
       var text = normalize(node.innerText);
-      var known = (ROUTES[text] || PRESS_LABELS[text]) && box.w >= 1.2 && box.w <= 22.6 && box.h >= 1.2 && box.h <= 12;
+      var known = (ROUTES[text] || PRESS_LABELS[text] || gripPresetByName(text)) && box.w >= 1.2 && box.w <= 22.6 && box.h >= 1.2 && box.h <= 12;
       var serviceRow = inServiceParams(node) && node.tagName === "P" && box.w >= 8 && box.h >= 1.2 && box.h <= 3;
       if (known || serviceRow) best = node;
       node = node.parentElement;
@@ -3100,7 +3237,7 @@
         bleRequest({ cmd: "set_k", sensor: Number(sensor), value: parsedK, k1: bleState.k1, k2: bleState.k2 });
         return;
       }
-      saveGripLoad();
+      if (!saveGripLoad()) return;
       editingParam = null;
       hideOverlays();
       return;
@@ -3192,9 +3329,14 @@
       return;
     }
 
-    if (label === "Жест Коза" || label === "Жест Джамбо" || label === "Схват Ключа") {
+    var libraryCard = event.target;
+    while (libraryCard && libraryCard !== document.body) {
+      if (libraryCard.getAttribute && libraryCard.getAttribute("data-vega-grip-card")) break;
+      libraryCard = libraryCard.parentElement;
+    }
+    if (libraryCard && libraryCard !== document.body && libraryCard.getAttribute("data-vega-grip-card")) {
       var activeGrip = document.getElementById("34_230_0_1");
-      if (activeGrip) activeGrip.textContent = "Активный схват: " + label;
+      if (activeGrip) activeGrip.textContent = "Активный схват: " + libraryCard.getAttribute("data-vega-grip-card");
       return;
     }
 
@@ -3267,6 +3409,7 @@
     paintAxis();
     paintMonitorTabBar();
     paintMonitorSensitivity();
+    renderGripLibrary();
     bindGripScroll();
     hideIconBesideNotification();
     ensureUpButton();

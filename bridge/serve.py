@@ -29,6 +29,7 @@ from vega_protocol import (
     SERIAL_UUID,
     SERVICE_MODE,
     USER_MODE,
+    USER_SETTING_MODE,
     VEGA_SERVICE,
     decode_text,
     pack_input,
@@ -271,6 +272,41 @@ class Bridge:
             await self.client.write_gatt_char(INPUT_UUID, packet, response=False)
         await self.broadcast({"event": "k", "k1": struct_k(packet, 33), "k2": struct_k(packet, 37)})
 
+    async def load_grips(self, message):
+        if not self.client or not self.client.is_connected:
+            await self.broadcast({"event": "error", "message": "Протез не подключён"})
+            return
+        source = dict(self.telemetry or {})
+
+        def six(key):
+            values = list(message.get(key) or [])
+            return [int(values[index]) if index < len(values) else 0 for index in range(6)]
+
+        source["custom1Speed"] = six("custom1Speed")
+        source["custom1Pos"] = six("custom1Pos")
+        source["custom2Speed"] = six("custom2Speed")
+        source["custom2Pos"] = six("custom2Pos")
+        try:
+            packet = pack_input(USER_SETTING_MODE, source)
+        except ValueError as exc:
+            await self.broadcast({"event": "error", "message": str(exc)})
+            return
+        async with self.lock:
+            await self.client.write_gatt_char(INPUT_UUID, packet, response=False)
+        if self.telemetry is not None:
+            self.telemetry["custom1Speed"] = source["custom1Speed"]
+            self.telemetry["custom1Pos"] = source["custom1Pos"]
+            self.telemetry["custom2Speed"] = source["custom2Speed"]
+            self.telemetry["custom2Pos"] = source["custom2Pos"]
+        await self.broadcast({
+            "event": "grips",
+            "message": "Схваты отправлены на протез",
+            "custom1Speed": source["custom1Speed"],
+            "custom1Pos": source["custom1Pos"],
+            "custom2Speed": source["custom2Speed"],
+            "custom2Pos": source["custom2Pos"],
+        })
+
     async def _disconnect(self, quiet=False):
         client = self.client
         self.client = None
@@ -326,6 +362,8 @@ class Bridge:
                 await self.write_myo(message.get("values") or {})
             elif command == "myo_role":
                 await self.send_myo_role()
+            elif command == "load_grips":
+                await self.load_grips(message)
             elif command == "set_k":
                 await self.set_k(
                     int(message.get("sensor") or 0),
