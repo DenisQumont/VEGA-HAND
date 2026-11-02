@@ -341,9 +341,9 @@
     { name: "Жест \"Салют\"", photo: "Custom8", bg: "rgb(237,241,240)", aspect: 1.332, focus: 0.42, speed: [0, 5, 5, 5, 0, 0], pos: [5, -5, -5, -5, 5, 5] },
     { name: "Жест \"Дуля\"", photo: "Custom9", bg: "rgb(236,241,239)", aspect: 1.332, focus: 0.4, speed: [5, 5, 5, 5, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
     { name: "Дополнительный щепоть", photo: "Custom10", bg: "rgb(250,252,251)", aspect: 0.751, speed: [0, 0, 5, 5, 0, 5], pos: [5, 5, -5, -5, 5, -5] },
-    { name: "Жест \"Три\"", photo: "Custom11", bg: "rgb(246,249,248)", aspect: 1.332, speed: [5, 0, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
-    { name: "Пассивный хват", photo: "Custom12", bg: "rgb(246,249,248)", aspect: 1.332, speed: [5, 5, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
-    { name: "Звонок", photo: "Custom13", bg: "rgb(246,249,248)", aspect: 1.332, speed: [0, 5, 5, 5, 0, -5], pos: [-5, -5, -5, -5, -5, 5] }
+    { name: "Жест \"Три\"", photo: "Custom11", bg: "rgb(250,254,253)", aspect: 1.332, focus: 0.435, speed: [5, 0, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
+    { name: "Пассивный хват", photo: "Custom12", bg: "rgb(250,254,253)", aspect: 1.332, focus: 0.435, speed: [5, 5, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
+    { name: "Звонок", photo: "Custom13", bg: "rgb(229,233,232)", aspect: 0.751, speed: [0, 5, 5, 5, 0, -5], pos: [-5, -5, -5, -5, -5, 5] }
   ];
   var PHONE_MYO_KEYS = ["dir_treshold", "TrigPercentTreshold", "TriggerBlocks", "TrigTresholdHigh", "TrigTresholdLow", "DifTriggerPlus", "DifTriggerMinus", "TrigDelayMax", "DifTrDelayMinus", "DifMovePlus", "DifMoveMinus", "MoveTresholdHigh", "MoveBlocks", "dead_Zone_Myo1", "dead_Zone_Myo2"];
   var phoneServer = null;
@@ -2984,7 +2984,7 @@
       var style = node.getAttribute("style") || "";
       if (style.indexOf("width: 6.125rem") !== -1 && style.indexOf("height: 10.625rem") !== -1) {
         var text = normalize(node.innerText);
-        if (text.indexOf("О программе") !== -1 || text.indexOf("О протезах") !== -1) return node;
+        if (text.indexOf("О приложении") !== -1 || text.indexOf("О программе") !== -1 || text.indexOf("О протезах") !== -1) return node;
       }
       node = node.parentElement;
     }
