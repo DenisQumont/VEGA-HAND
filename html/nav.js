@@ -1287,6 +1287,8 @@
     });
     if (valueDialog) valueDialog.style.display = "none";
     if (stubDialog) stubDialog.style.display = "none";
+    var gripView = document.getElementById("vega-grip-view");
+    if (gripView) gripView.style.display = "none";
     var devices = document.getElementById("vega-devices");
     if (devices) devices.style.display = "none";
     scrim.style.display = "none";
@@ -1804,6 +1806,7 @@
     GRIP_PRESETS.forEach(function (preset) {
       var card = document.createElement("div");
       card.setAttribute("data-vega-grip-card", preset.name);
+      card.setAttribute("data-vega-grip-photo", preset.photo);
       card.style.cssText = "position:relative;flex:0 0 6.125rem;isolation:isolate;width:6.125rem;height:10.625rem;cursor:pointer;";
       var face = document.createElement("div");
       face.style.cssText = "width:100%;height:100%;overflow:hidden;position:relative;border-radius:0.625rem;z-index:1;background:" + preset.bg + ";";
@@ -1841,6 +1844,39 @@
       else row.appendChild(card);
     });
     row.dataset.vegaBuilt = "1";
+  }
+
+  function ensureGripViewer() {
+    var view = document.getElementById("vega-grip-view");
+    if (view) return view;
+    view = document.createElement("div");
+    view.id = "vega-grip-view";
+    view.style.cssText = "display:none;position:fixed;left:0.75rem;right:0.75rem;top:0.75rem;bottom:0.75rem;width:auto;max-width:22.5rem;margin:0 auto;background:#fefefe;border-radius:0.875rem;z-index:50;overflow:hidden;box-shadow:0 0.5rem 1.5rem rgba(0,0,0,.28);";
+    view.innerHTML = '<p data-vega-grip-view-title style="position:absolute;left:1rem;right:1rem;top:0.85rem;margin:0;font-size:1.05rem;font-family:Roboto-Medium,sans-serif;font-weight:500;line-height:1.3rem;color:#222;"></p>'
+      + '<img data-vega-grip-view-photo alt="" style="position:absolute;left:0.75rem;right:0.75rem;top:2.7rem;bottom:4.35rem;width:calc(100% - 1.5rem);height:calc(100% - 7.05rem);object-fit:contain;background:#f3f5f4;">'
+      + '<div data-vega-grip-view-close="1" style="position:absolute;left:1rem;right:1rem;bottom:0.85rem;height:2.75rem;border-radius:0.625rem;background:rgb(55,90,118);cursor:pointer;display:flex;align-items:center;justify-content:center;"><p style="margin:0;font-size:1rem;font-family:Roboto-Bold,sans-serif;font-weight:700;color:#fefefe;pointer-events:none;">Закрыть</p></div>';
+    document.body.appendChild(view);
+    return view;
+  }
+
+  function openGripPhoto(name) {
+    var preset = gripPresetByName(name);
+    if (!preset) return;
+    var view = ensureGripViewer();
+    view.querySelector("[data-vega-grip-view-title]").textContent = preset.name;
+    var img = view.querySelector("[data-vega-grip-view-photo]");
+    img.alt = preset.name;
+    img.src = "../grip_img/" + preset.photo + ".JPG";
+    if (stubDialog) stubDialog.style.display = "none";
+    if (valueDialog) valueDialog.style.display = "none";
+    sheets.forEach(function (el) { el.style.display = "none"; });
+    scrim.style.display = "block";
+    scrim.style.zIndex = "40";
+    scrim.style.opacity = "";
+    scrim.style.transition = "";
+    view.style.display = "block";
+    setTabBarsHidden(true);
+    lockOverlayScroll();
   }
 
   function openGripLoad() {
@@ -3205,6 +3241,18 @@
 
   document.addEventListener("click", function (event) {
     if (event.target === scrim) return;
+    var gripView = document.getElementById("vega-grip-view");
+    if (gripView && gripView.style.display !== "none" && gripView.contains(event.target)) {
+      var closer = event.target;
+      while (closer && closer !== gripView) {
+        if (closer.getAttribute && closer.getAttribute("data-vega-grip-view-close") === "1") {
+          hideOverlays();
+          return;
+        }
+        closer = closer.parentElement;
+      }
+      return;
+    }
     if (event.target && event.target.getAttribute && event.target.getAttribute("data-vega-number")) return;
     if (event.target && (event.target.tagName === "SELECT" || event.target.tagName === "OPTION")) return;
 
@@ -3354,8 +3402,7 @@
       libraryCard = libraryCard.parentElement;
     }
     if (libraryCard && libraryCard !== document.body && libraryCard.getAttribute("data-vega-grip-card")) {
-      var activeGrip = document.getElementById("34_230_0_1");
-      if (activeGrip) activeGrip.textContent = "Активный схват: " + libraryCard.getAttribute("data-vega-grip-card");
+      openGripPhoto(libraryCard.getAttribute("data-vega-grip-card"));
       return;
     }
 
