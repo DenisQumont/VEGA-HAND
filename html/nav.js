@@ -331,16 +331,16 @@
   var PHONE_GRIPS = ["Раскрытая ладонь", "Нейтральный схват", "Силовой схват", "Кулачный схват", "Схват удержания чашки", "Удерживающий схват", "Цилиндрический схват", "Плоская ладонь", "Схват для нажатия", "Указательный жест", "Схват удержания карты", "Трехпалый щепоть", "Двухпалый щепоть", "Боковой схват", "Закрытый схват", "Пользовательский схват №1", "Пользовательский схват №2"];
   var UNKNOWN_GRIP = "Неизвестный схват";
   var GRIP_PRESETS = [
-    { name: "Жест \"Коза\"", photo: "Custom1", bg: "rgb(248,251,250)", aspect: 1.332, focus: 0.425, speed: [0, 5, 5, 0, 0, 0], pos: [-5, 5, 5, -5, -5, -5] },
-    { name: "Жест \"Закрытая коза\"", photo: "Custom2", bg: "rgb(250,253,252)", aspect: 1.332, focus: 0.49, speed: [5, 0, 0, 5, 0, 5], pos: [-5, 5, 5, -5, -5, 5] },
-    { name: "Жест \"Джамбо\"", photo: "Custom3", bg: "rgb(248,250,249)", aspect: 0.751, speed: [5, 0, 0, 0, 0, 5], pos: [-5, 5, 5, 5, -5, -5] },
-    { name: "Быстрый щепоть", photo: "Custom4", bg: "rgb(250,253,252)", aspect: 1.332, focus: 0.445, speed: [0, 0, 0, 5, 0, 5], pos: [-5, -5, -5, -5, 5, -5] },
-    { name: "Жест \"Скидыщ\"", photo: "Custom5", bg: "rgb(243,246,245)", aspect: 1.332, focus: 0.385, speed: [5, 0, 0, 0, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
-    { name: "Жест \"Класс\"", photo: "Custom6", bg: "rgb(248,250,249)", aspect: 0.751, speed: [0, 0, 0, 0, 0, 5], pos: [5, 5, 5, 5, -5, 5] },
-    { name: "Жест \"Ножницы\"", photo: "Custom7", bg: "rgb(235,240,238)", aspect: 0.751, speed: [0, 0, 5, 5, 0, 0], pos: [5, 5, -5, -5, 5, 5] },
-    { name: "Жест \"Салют\"", photo: "Custom8", bg: "rgb(237,241,240)", aspect: 1.332, focus: 0.42, speed: [0, 5, 5, 5, 0, 0], pos: [5, -5, -5, -5, 5, 5] },
-    { name: "Жест \"Дуля\"", photo: "Custom9", bg: "rgb(236,241,239)", aspect: 1.332, focus: 0.4, speed: [5, 5, 5, 5, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
-    { name: "Дополнительный щепоть", photo: "Custom10", bg: "rgb(250,252,251)", aspect: 0.751, speed: [0, 0, 5, 5, 0, 5], pos: [5, 5, -5, -5, 5, -5] },
+    { name: "Жест \"Коза\"", photo: "Custom1", bg: "rgb(248,251,250)", aspect: 0.751, frameSize: "auto 135%", framePos: "63% 62%", speed: [0, 5, 5, 0, 0, 0], pos: [-5, 5, 5, -5, -5, -5] },
+    { name: "Жест \"Закрытая коза\"", photo: "Custom2", bg: "rgb(250,253,252)", aspect: 0.751, frameSize: "auto 135%", framePos: "49% 39%", speed: [5, 0, 0, 5, 0, 5], pos: [-5, 5, 5, -5, -5, 5] },
+    { name: "Жест \"Джамбо\"", photo: "Custom3", bg: "rgb(248,250,249)", aspect: 0.751, frameSize: "auto 135%", framePos: "60% 50%", speed: [5, 0, 0, 0, 0, 5], pos: [-5, 5, 5, 5, -5, -5] },
+    { name: "Быстрый щепоть", photo: "Custom4", bg: "rgb(250,253,252)", aspect: 0.751, frameSize: "auto 135%", framePos: "43% 53%", speed: [0, 0, 0, 5, 0, 5], pos: [-5, -5, -5, -5, 5, -5] },
+    { name: "Жест \"Скидыщ\"", photo: "Custom5", bg: "rgb(243,246,245)", aspect: 0.751, frameSize: "auto 135%", framePos: "50% 76%", speed: [5, 0, 0, 0, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
+    { name: "Жест \"Класс\"", photo: "Custom6", bg: "rgb(248,250,249)", aspect: 0.751, frameSize: "auto 108%", framePos: "55% 58%", speed: [0, 0, 0, 0, 0, 5], pos: [5, 5, 5, 5, -5, 5] },
+    { name: "Жест \"Ножницы\"", photo: "Custom7", bg: "rgb(235,240,238)", aspect: 0.751, frameSize: "auto 135%", framePos: "40% 53%", speed: [0, 0, 5, 5, 0, 0], pos: [5, 5, -5, -5, 5, 5] },
+    { name: "Жест \"Салют\"", photo: "Custom8", bg: "rgb(237,241,240)", aspect: 0.751, frameSize: "auto 135%", framePos: "48% 65%", speed: [0, 5, 5, 5, 0, 0], pos: [5, -5, -5, -5, 5, 5] },
+    { name: "Жест \"Дуля\"", photo: "Custom9", bg: "rgb(236,241,239)", aspect: 0.751, frameSize: "auto 135%", framePos: "52% 72%", speed: [5, 5, 5, 5, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
+    { name: "Дополнительный щепоть", photo: "Custom10", bg: "rgb(250,252,251)", aspect: 0.751, frameSize: "auto 135%", framePos: "43% 44%", speed: [0, 0, 5, 5, 0, 5], pos: [5, 5, -5, -5, 5, -5] },
     { name: "Жест \"Три\"", photo: "Custom11", bg: "rgb(250,254,253)", aspect: 0.751, frameSize: "auto 135%", framePos: "62% 42%", speed: [5, 0, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
     { name: "Пассивный хват", photo: "Custom12", bg: "rgb(250,254,253)", aspect: 0.751, frameSize: "auto 135%", framePos: "62% 42%", speed: [5, 5, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
     { name: "Звонок", photo: "Custom13", bg: "rgb(229,233,232)", aspect: 0.751, frameSize: "auto 135%", framePos: "55% 38%", speed: [0, 5, 5, 5, 0, -5], pos: [-5, -5, -5, -5, -5, 5] }
@@ -1851,10 +1851,10 @@
     if (view) return view;
     view = document.createElement("div");
     view.id = "vega-grip-view";
-    view.style.cssText = "display:none;position:fixed;left:0.75rem;right:0.75rem;top:0.75rem;bottom:0.75rem;width:auto;max-width:22.5rem;margin:0 auto;background:#fefefe;border-radius:0.875rem;z-index:50;overflow:hidden;box-shadow:0 0.5rem 1.5rem rgba(0,0,0,.28);";
-    view.innerHTML = '<p data-vega-grip-view-title style="position:absolute;left:1rem;right:1rem;top:0.85rem;margin:0;font-size:1.05rem;font-family:Roboto-Medium,sans-serif;font-weight:500;line-height:1.3rem;color:#222;"></p>'
-      + '<img data-vega-grip-view-photo alt="" style="position:absolute;left:0.75rem;right:0.75rem;top:2.7rem;bottom:4.35rem;width:calc(100% - 1.5rem);height:calc(100% - 7.05rem);object-fit:contain;background:#f3f5f4;">'
-      + '<div data-vega-grip-view-close="1" style="position:absolute;left:1rem;right:1rem;bottom:0.85rem;height:2.75rem;border-radius:0.625rem;background:rgb(55,90,118);cursor:pointer;display:flex;align-items:center;justify-content:center;"><p style="margin:0;font-size:1rem;font-family:Roboto-Bold,sans-serif;font-weight:700;color:#fefefe;pointer-events:none;">Закрыть</p></div>';
+    view.style.cssText = "display:none;position:fixed;inset:0;width:100%;height:100%;background:#101010;z-index:80;";
+    view.innerHTML = '<img data-vega-grip-view-photo alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;">'
+      + '<p data-vega-grip-view-title style="position:absolute;left:1rem;right:6.5rem;top:max(0.85rem, env(safe-area-inset-top));margin:0;font-size:1rem;font-family:Roboto-Medium,sans-serif;font-weight:500;line-height:1.3rem;color:#fefefe;"></p>'
+      + '<div data-vega-grip-view-close="1" style="position:absolute;top:max(0.7rem, env(safe-area-inset-top));right:0.75rem;height:2.25rem;padding:0 0.9rem;border-radius:0.625rem;background:rgb(55,90,118);cursor:pointer;display:flex;align-items:center;justify-content:center;"><p style="margin:0;font-size:0.875rem;font-family:Roboto-Bold,sans-serif;font-weight:700;color:#fefefe;pointer-events:none;">Закрыть</p></div>';
     document.body.appendChild(view);
     return view;
   }
@@ -3242,15 +3242,8 @@
   document.addEventListener("click", function (event) {
     if (event.target === scrim) return;
     var gripView = document.getElementById("vega-grip-view");
-    if (gripView && gripView.style.display !== "none" && gripView.contains(event.target)) {
-      var closer = event.target;
-      while (closer && closer !== gripView) {
-        if (closer.getAttribute && closer.getAttribute("data-vega-grip-view-close") === "1") {
-          hideOverlays();
-          return;
-        }
-        closer = closer.parentElement;
-      }
+    if (gripView && gripView.style.display !== "none" && (event.target === gripView || gripView.contains(event.target))) {
+      hideOverlays();
       return;
     }
     if (event.target && event.target.getAttribute && event.target.getAttribute("data-vega-number")) return;
