@@ -331,19 +331,19 @@
   var PHONE_GRIPS = ["Раскрытая ладонь", "Нейтральный схват", "Силовой схват", "Кулачный схват", "Схват удержания чашки", "Удерживающий схват", "Цилиндрический схват", "Плоская ладонь", "Схват для нажатия", "Указательный жест", "Схват удержания карты", "Трехпалый щепоть", "Двухпалый щепоть", "Боковой схват", "Закрытый схват", "Пользовательский схват №1", "Пользовательский схват №2"];
   var UNKNOWN_GRIP = "Неизвестный схват";
   var GRIP_PRESETS = [
-    { name: "Жест \"Коза\"", photo: "Custom1", bg: "rgb(248,251,250)", speed: [0, 5, 5, 0, 0, 0], pos: [-5, 5, 5, -5, -5, -5] },
-    { name: "Жест \"Закрытая коза\"", photo: "Custom2", bg: "rgb(250,253,252)", speed: [5, 0, 0, 5, 0, 5], pos: [-5, 5, 5, -5, -5, 5] },
-    { name: "Жест \"Джамбо\"", photo: "Custom3", bg: "rgb(248,250,249)", speed: [5, 0, 0, 0, 0, 5], pos: [-5, 5, 5, 5, -5, -5] },
-    { name: "Быстрый щепоть", photo: "Custom4", bg: "rgb(250,253,252)", speed: [0, 0, 0, 5, 0, 5], pos: [-5, -5, -5, -5, 5, -5] },
-    { name: "Жест \"Скидыщ\"", photo: "Custom5", bg: "rgb(243,246,245)", speed: [5, 0, 0, 0, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
-    { name: "Жест \"Класс\"", photo: "Custom6", bg: "rgb(248,250,249)", speed: [0, 0, 0, 0, 0, 5], pos: [5, 5, 5, 5, -5, 5] },
-    { name: "Жест \"Ножницы\"", photo: "Custom7", bg: "rgb(235,240,238)", speed: [0, 0, 5, 5, 0, 0], pos: [5, 5, -5, -5, 5, 5] },
-    { name: "Жест \"Салют\"", photo: "Custom8", bg: "rgb(237,241,240)", speed: [0, 5, 5, 5, 0, 0], pos: [5, -5, -5, -5, 5, 5] },
-    { name: "Жест \"Дуля\"", photo: "Custom9", bg: "rgb(236,241,239)", speed: [5, 5, 5, 5, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
-    { name: "Дополнительный щепоть", photo: "Custom10", bg: "rgb(250,252,251)", speed: [0, 0, 5, 5, 0, 5], pos: [5, 5, -5, -5, 5, -5] },
-    { name: "Жест \"Три\"", photo: "Custom11", bg: "rgb(246,249,248)", speed: [5, 0, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
-    { name: "Пассивный хват", photo: "Custom12", bg: "rgb(246,249,248)", speed: [5, 5, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
-    { name: "Звонок", photo: "Custom13", bg: "rgb(246,249,248)", speed: [0, 5, 5, 5, 0, -5], pos: [-5, -5, -5, -5, -5, 5] }
+    { name: "Жест \"Коза\"", photo: "Custom1", bg: "rgb(248,251,250)", aspect: 1.332, speed: [0, 5, 5, 0, 0, 0], pos: [-5, 5, 5, -5, -5, -5] },
+    { name: "Жест \"Закрытая коза\"", photo: "Custom2", bg: "rgb(250,253,252)", aspect: 1.332, speed: [5, 0, 0, 5, 0, 5], pos: [-5, 5, 5, -5, -5, 5] },
+    { name: "Жест \"Джамбо\"", photo: "Custom3", bg: "rgb(248,250,249)", aspect: 0.751, speed: [5, 0, 0, 0, 0, 5], pos: [-5, 5, 5, 5, -5, -5] },
+    { name: "Быстрый щепоть", photo: "Custom4", bg: "rgb(250,253,252)", aspect: 1.332, speed: [0, 0, 0, 5, 0, 5], pos: [-5, -5, -5, -5, 5, -5] },
+    { name: "Жест \"Скидыщ\"", photo: "Custom5", bg: "rgb(243,246,245)", aspect: 1.332, speed: [5, 0, 0, 0, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
+    { name: "Жест \"Класс\"", photo: "Custom6", bg: "rgb(248,250,249)", aspect: 0.751, speed: [0, 0, 0, 0, 0, 5], pos: [5, 5, 5, 5, -5, 5] },
+    { name: "Жест \"Ножницы\"", photo: "Custom7", bg: "rgb(235,240,238)", aspect: 0.751, speed: [0, 0, 5, 5, 0, 0], pos: [5, 5, -5, -5, 5, 5] },
+    { name: "Жест \"Салют\"", photo: "Custom8", bg: "rgb(237,241,240)", aspect: 1.332, speed: [0, 5, 5, 5, 0, 0], pos: [5, -5, -5, -5, 5, 5] },
+    { name: "Жест \"Дуля\"", photo: "Custom9", bg: "rgb(236,241,239)", aspect: 1.332, speed: [5, 5, 5, 5, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
+    { name: "Дополнительный щепоть", photo: "Custom10", bg: "rgb(250,252,251)", aspect: 0.751, speed: [0, 0, 5, 5, 0, 5], pos: [5, 5, -5, -5, 5, -5] },
+    { name: "Жест \"Три\"", photo: "Custom11", bg: "rgb(246,249,248)", aspect: 1.332, speed: [5, 0, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
+    { name: "Пассивный хват", photo: "Custom12", bg: "rgb(246,249,248)", aspect: 1.332, speed: [5, 5, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
+    { name: "Звонок", photo: "Custom13", bg: "rgb(246,249,248)", aspect: 1.332, speed: [0, 5, 5, 5, 0, -5], pos: [-5, -5, -5, -5, -5, 5] }
   ];
   var PHONE_MYO_KEYS = ["dir_treshold", "TrigPercentTreshold", "TriggerBlocks", "TrigTresholdHigh", "TrigTresholdLow", "DifTriggerPlus", "DifTriggerMinus", "TrigDelayMax", "DifTrDelayMinus", "DifMovePlus", "DifMoveMinus", "MoveTresholdHigh", "MoveBlocks", "dead_Zone_Myo1", "dead_Zone_Myo2"];
   var phoneServer = null;
@@ -1806,12 +1806,13 @@
       card.setAttribute("data-vega-grip-card", preset.name);
       card.style.cssText = "position:relative;flex:0 0 6.125rem;isolation:isolate;width:6.125rem;height:10.625rem;cursor:pointer;";
       var face = document.createElement("div");
-      face.style.cssText = "width:100%;height:100%;overflow:hidden;position:relative;border-radius:0.625rem;z-index:1;background:" + preset.bg + ";display:flex;flex-direction:column;box-sizing:border-box;padding:0.5rem 0.45rem 0.4rem;";
+      face.style.cssText = "width:100%;height:100%;overflow:hidden;position:relative;border-radius:0.625rem;z-index:1;background:" + preset.bg + ";";
+      var photoHeight = (6.125 / preset.aspect).toFixed(3) + "rem";
+      var photo = document.createElement("div");
+      photo.style.cssText = "position:absolute;left:0;right:0;bottom:0;height:" + photoHeight + ";background-color:" + preset.bg + ";background-image:url(../grip_img/" + preset.photo + ".JPG);background-size:100% 100%;background-repeat:no-repeat;-webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 28%);mask-image:linear-gradient(to bottom, transparent 0%, #000 28%);";
       var title = document.createElement("p");
       title.textContent = preset.name;
-      title.style.cssText = "flex:0 0 auto;margin:0;font-size:0.75rem;font-family:Roboto-Medium,sans-serif;font-weight:500;text-align:left;line-height:0.95rem;color:rgb(34,34,34);";
-      var photo = document.createElement("div");
-      photo.style.cssText = "flex:1 1 auto;min-height:0;margin-top:0.35rem;background-color:" + preset.bg + ";background-image:url(../grip_img/" + preset.photo + ".JPG);background-size:contain;background-repeat:no-repeat;background-position:center center;";
+      title.style.cssText = "position:absolute;left:0.5rem;right:0.4rem;top:0.45rem;margin:0;z-index:2;font-size:0.75rem;font-family:Roboto-Medium,sans-serif;font-weight:500;text-align:left;line-height:0.95rem;color:rgb(34,34,34);";
       var border = document.createElement("div");
       border.style.cssText = "position:absolute;inset:0;border-radius:0.625rem;pointer-events:none;z-index:2;border:0.125rem solid rgba(34,34,34,1);box-sizing:border-box;";
       face.appendChild(title);
