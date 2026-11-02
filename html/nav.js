@@ -331,16 +331,16 @@
   var PHONE_GRIPS = ["Раскрытая ладонь", "Нейтральный схват", "Силовой схват", "Кулачный схват", "Схват удержания чашки", "Удерживающий схват", "Цилиндрический схват", "Плоская ладонь", "Схват для нажатия", "Указательный жест", "Схват удержания карты", "Трехпалый щепоть", "Двухпалый щепоть", "Боковой схват", "Закрытый схват", "Пользовательский схват №1", "Пользовательский схват №2"];
   var UNKNOWN_GRIP = "Неизвестный схват";
   var GRIP_PRESETS = [
-    { name: "Жест \"Коза\"", photo: "Custom1", bg: "rgb(248,251,250)", aspect: 0.751, frameSize: "auto 135%", framePos: "63% 62%", speed: [0, 5, 5, 0, 0, 0], pos: [-5, 5, 5, -5, -5, -5] },
-    { name: "Жест \"Закрытая коза\"", photo: "Custom2", bg: "rgb(250,253,252)", aspect: 0.751, frameSize: "auto 135%", framePos: "49% 39%", speed: [5, 0, 0, 5, 0, 5], pos: [-5, 5, 5, -5, -5, 5] },
-    { name: "Жест \"Джамбо\"", photo: "Custom3", bg: "rgb(248,250,249)", aspect: 0.751, frameSize: "auto 135%", framePos: "60% 50%", speed: [5, 0, 0, 0, 0, 5], pos: [-5, 5, 5, 5, -5, -5] },
-    { name: "Быстрый щепоть", photo: "Custom4", bg: "rgb(250,253,252)", aspect: 0.751, frameSize: "auto 135%", framePos: "43% 53%", speed: [0, 0, 0, 5, 0, 5], pos: [-5, -5, -5, -5, 5, -5] },
-    { name: "Жест \"Скидыщ\"", photo: "Custom5", bg: "rgb(243,246,245)", aspect: 0.751, frameSize: "auto 135%", framePos: "50% 76%", speed: [5, 0, 0, 0, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
-    { name: "Жест \"Класс\"", photo: "Custom6", bg: "rgb(248,250,249)", aspect: 0.751, frameSize: "auto 108%", framePos: "55% 58%", speed: [0, 0, 0, 0, 0, 5], pos: [5, 5, 5, 5, -5, 5] },
-    { name: "Жест \"Ножницы\"", photo: "Custom7", bg: "rgb(235,240,238)", aspect: 0.751, frameSize: "auto 135%", framePos: "40% 53%", speed: [0, 0, 5, 5, 0, 0], pos: [5, 5, -5, -5, 5, 5] },
-    { name: "Жест \"Салют\"", photo: "Custom8", bg: "rgb(237,241,240)", aspect: 0.751, frameSize: "auto 135%", framePos: "48% 65%", speed: [0, 5, 5, 5, 0, 0], pos: [5, -5, -5, -5, 5, 5] },
-    { name: "Жест \"Дуля\"", photo: "Custom9", bg: "rgb(236,241,239)", aspect: 0.751, frameSize: "auto 135%", framePos: "52% 72%", speed: [5, 5, 5, 5, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
-    { name: "Дополнительный щепоть", photo: "Custom10", bg: "rgb(250,252,251)", aspect: 0.751, frameSize: "auto 135%", framePos: "43% 44%", speed: [0, 0, 5, 5, 0, 5], pos: [5, 5, -5, -5, 5, -5] },
+    { name: "Жест \"Коза\"", photo: "Custom1", bg: "rgb(248,251,250)", aspect: 0.751, frameSize: "auto 165%", framePos: "61% 62%", speed: [0, 5, 5, 0, 0, 0], pos: [-5, 5, 5, -5, -5, -5] },
+    { name: "Жест \"Закрытая коза\"", photo: "Custom2", bg: "rgb(250,253,252)", aspect: 0.751, frameSize: "auto 150%", framePos: "49% 46%", speed: [5, 0, 0, 5, 0, 5], pos: [-5, 5, 5, -5, -5, 5] },
+    { name: "Жест \"Джамбо\"", photo: "Custom3", bg: "rgb(248,250,249)", aspect: 0.751, frameSize: "auto 149%", framePos: "61% 54%", speed: [5, 0, 0, 0, 0, 5], pos: [-5, 5, 5, 5, -5, -5] },
+    { name: "Быстрый щепоть", photo: "Custom4", bg: "rgb(250,253,252)", aspect: 0.751, frameSize: "auto 173%", framePos: "46% 55%", speed: [0, 0, 0, 5, 0, 5], pos: [-5, -5, -5, -5, 5, -5] },
+    { name: "Жест \"Скидыщ\"", photo: "Custom5", bg: "rgb(243,246,245)", aspect: 0.751, frameSize: "auto 172%", framePos: "50% 70%", speed: [5, 0, 0, 0, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
+    { name: "Жест \"Класс\"", photo: "Custom6", bg: "rgb(248,250,249)", aspect: 0.751, frameSize: "auto 150%", framePos: "54% 64%", speed: [0, 0, 0, 0, 0, 5], pos: [5, 5, 5, 5, -5, 5] },
+    { name: "Жест \"Ножницы\"", photo: "Custom7", bg: "rgb(235,240,238)", aspect: 0.751, frameSize: "auto 164%", framePos: "43% 55%", speed: [0, 0, 5, 5, 0, 0], pos: [5, 5, -5, -5, 5, 5] },
+    { name: "Жест \"Салют\"", photo: "Custom8", bg: "rgb(237,241,240)", aspect: 0.751, frameSize: "auto 169%", framePos: "49% 63%", speed: [0, 5, 5, 5, 0, 0], pos: [5, -5, -5, -5, 5, 5] },
+    { name: "Жест \"Дуля\"", photo: "Custom9", bg: "rgb(236,241,239)", aspect: 0.751, frameSize: "auto 181%", framePos: "53% 66%", speed: [5, 5, 5, 5, 0, 0], pos: [-5, -5, -5, -5, 5, 5] },
+    { name: "Дополнительный щепоть", photo: "Custom10", bg: "rgb(250,252,251)", aspect: 0.751, frameSize: "auto 151%", framePos: "46% 51%", speed: [0, 0, 5, 5, 0, 5], pos: [5, 5, -5, -5, 5, -5] },
     { name: "Жест \"Три\"", photo: "Custom11", bg: "rgb(250,254,253)", aspect: 0.751, frameSize: "auto 135%", framePos: "62% 42%", speed: [5, 0, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
     { name: "Пассивный хват", photo: "Custom12", bg: "rgb(250,254,253)", aspect: 0.751, frameSize: "auto 135%", framePos: "62% 42%", speed: [5, 5, 0, 0, 0, 5], pos: [-5, -5, -5, -5, -5, -5] },
     { name: "Звонок", photo: "Custom13", bg: "rgb(229,233,232)", aspect: 0.751, frameSize: "auto 135%", framePos: "55% 38%", speed: [0, 5, 5, 5, 0, -5], pos: [-5, -5, -5, -5, -5, 5] }
