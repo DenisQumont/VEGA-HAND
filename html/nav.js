@@ -1987,11 +1987,18 @@
     spawnTimer: 0,
     keyLeft: false,
     keyRight: false,
-    touchDir: 0
+    touchDir: 0,
+    steerVisual: 0,
+    shipImg: null
   };
 
   function ensureLostVegaView() {
     if (lostVega.view) return lostVega.view;
+    if (!lostVega.shipImg) {
+      var shipSprite = new Image();
+      shipSprite.src = "./image/vega_ship.png";
+      lostVega.shipImg = shipSprite;
+    }
     try {
       lostVega.best = Math.max(0, parseInt(localStorage.getItem("vega-lost-vega-best") || "0", 10) || 0);
     } catch (_e) {}
@@ -2172,10 +2179,10 @@
     if (m2Bar) m2Bar.style.width = Math.min(100, Math.round((m2 / 5) * 100)) + "%";
 
     var wall = 14;
-    var shipRadius = 15;
+    var shipRadius = 22;
     var minShipX = wall + shipRadius + 4;
     var maxShipX = w - wall - shipRadius - 4;
-    var shipY = h - 54;
+    var shipY = h - 58;
 
     if (lostVega.state === "running") {
       var deadzone = 0.35;
@@ -2185,6 +2192,7 @@
       if (lostVega.keyLeft || lostVega.touchDir < 0) steer -= 0.85;
       if (lostVega.keyRight || lostVega.touchDir > 0) steer += 0.85;
       steer = Math.max(-1.25, Math.min(1.25, steer));
+      lostVega.steerVisual = steer;
 
       var pxX = minShipX + lostVega.shipX * (maxShipX - minShipX);
       pxX += steer * 235 * dt;
@@ -2294,40 +2302,39 @@
       ctx.restore();
     }
 
-    // Vega starship
+    // Vega starship sprite
     var drawShipX = minShipX + lostVega.shipX * (maxShipX - minShipX);
     ctx.save();
     ctx.translate(drawShipX, shipY);
+    if (lostVega.state === "running" && lostVega.steerVisual) {
+      ctx.rotate(lostVega.steerVisual * 0.14);
+    }
 
     if (lostVega.state === "running") {
-      var flame = 10 + Math.random() * 9;
-      ctx.fillStyle = "#ff942e";
+      var pulse = 4 + Math.random() * 6;
+      ctx.fillStyle = "rgba(56, 174, 255, 0.78)";
       ctx.beginPath();
-      ctx.moveTo(-5, 13);
-      ctx.lineTo(0, 13 + flame);
-      ctx.lineTo(5, 13);
-      ctx.closePath();
+      ctx.ellipse(-9, 20 + pulse * 0.5, 3.2, pulse, 0, 0, Math.PI * 2);
+      ctx.ellipse(9, 20 + pulse * 0.5, 3.2, pulse, 0, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    ctx.fillStyle = lostVega.state === "crashed" ? "#ff5252" : "#dceeff";
-    ctx.strokeStyle = "#48a8ff";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, -18);
-    ctx.lineTo(15, 13);
-    ctx.lineTo(6, 9);
-    ctx.lineTo(0, 14);
-    ctx.lineTo(-6, 9);
-    ctx.lineTo(-15, 13);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    if (lostVega.shipImg && lostVega.shipImg.complete && lostVega.shipImg.naturalWidth > 0) {
+      var sw = 56;
+      var sh = 52;
+      ctx.drawImage(lostVega.shipImg, -sw / 2, -sh / 2, sw, sh);
+    }
 
-    ctx.fillStyle = "#2997ff";
-    ctx.beginPath();
-    ctx.ellipse(0, -3, 4, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
+    if (lostVega.state === "crashed") {
+      ctx.fillStyle = "rgba(255, 110, 40, 0.72)";
+      ctx.beginPath();
+      ctx.arc(0, 0, 24, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 230, 120, 0.85)";
+      ctx.beginPath();
+      ctx.arc(0, 0, 12, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
 
     lostVega.raf = requestAnimationFrame(stepLostVega);
