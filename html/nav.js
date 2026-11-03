@@ -116,6 +116,31 @@
     el.style.display = "none";
   }
 
+  function copyClinicMap() {
+    var url = "https://yandex.ru/maps/-/CXrjJT3H";
+    function done() { toast("Ссылка скопирована", 1800); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, function () { fallbackCopy(url, done); });
+      return;
+    }
+    fallbackCopy(url, done);
+  }
+
+  function fallbackCopy(url, done) {
+    var input = document.createElement("textarea");
+    input.value = url;
+    input.setAttribute("readonly", "");
+    input.style.position = "fixed";
+    input.style.left = "-9999px";
+    document.body.appendChild(input);
+    input.select();
+    var copied = false;
+    try { copied = document.execCommand("copy"); } catch (e) { copied = false; }
+    document.body.removeChild(input);
+    if (copied) done();
+    else toast(url);
+  }
+
   function paintText(id, value) {
     var node = document.getElementById(id);
     if (!node || value == null || value === "") return;
@@ -3572,6 +3597,8 @@
     "Сброс настроек": 1,
     "Обновить настройки протеза": 1,
     "Добавить документ": 1,
+    "Перейти": 1,
+    "Поделиться": 1,
     "Добавить профиль протеза": 1,
     "5 сек": 1,
     "10 сек": 1,
@@ -3871,6 +3898,27 @@
 
     if (label === "Выйти из сервисного режима") {
       exitServiceMode();
+      return;
+    }
+
+    var contactAction = event.target;
+    while (contactAction && contactAction !== document.body) {
+      if (contactAction.getAttribute && contactAction.getAttribute("data-vega-contact")) break;
+      contactAction = contactAction.parentElement;
+    }
+    if (contactAction && contactAction !== document.body) {
+      if (contactAction.getAttribute("data-vega-contact") === "share") copyClinicMap();
+      else window.open("https://mpometallist.ru/", "_blank", "noopener");
+      return;
+    }
+
+    if (label === "Перейти") {
+      window.open("https://mpometallist.ru/", "_blank", "noopener");
+      return;
+    }
+
+    if (label === "Поделиться" || label === "Поделится") {
+      copyClinicMap();
       return;
     }
 
