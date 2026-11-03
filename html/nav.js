@@ -1972,6 +1972,417 @@
     showGripPhotoFile((PHONE_GRIPS[idx] || "Схват") + ": №" + idx, "grip" + idx);
   }
 
+  var lostVega = {
+    view: null,
+    canvas: null,
+    ctx: null,
+    raf: 0,
+    state: "intro",
+    score: 0,
+    best: 0,
+    lastTs: 0,
+    shipX: 0.5,
+    stars: [],
+    asteroids: [],
+    spawnTimer: 0,
+    keyLeft: false,
+    keyRight: false,
+    touchDir: 0
+  };
+
+  function ensureLostVegaView() {
+    if (lostVega.view) return lostVega.view;
+    try {
+      lostVega.best = Math.max(0, parseInt(localStorage.getItem("vega-lost-vega-best") || "0", 10) || 0);
+    } catch (_e) {}
+    var view = document.createElement("div");
+    view.id = "vega-lost-vega";
+    view.style.cssText = "display:none;position:fixed;inset:0;width:100%;height:100%;background:#060a14;z-index:85;user-select:none;-webkit-user-select:none;overflow:hidden;";
+    view.innerHTML = ''
+      + '<div style="position:relative;width:100%;max-width:22.5rem;height:100%;margin:0 auto;display:flex;flex-direction:column;background:#070d19;">'
+      + '  <div style="display:flex;align-items:center;justify-content:space-between;gap:0.35rem;padding:max(0.6rem, env(safe-area-inset-top)) 0.65rem 0.5rem;background:#0c1629;border-bottom:0.0625rem solid rgba(110,175,255,0.28);z-index:3;">'
+      + '    <div style="display:flex;flex-direction:column;gap:0.1rem;">'
+      + '      <p data-lv-score style="margin:0;font-family:Roboto-Bold,sans-serif;font-size:0.82rem;font-weight:700;color:#e8f3ff;">СЧЁТ: 0</p>'
+      + '      <p data-lv-best style="margin:0;font-family:Roboto-Medium,sans-serif;font-size:0.7rem;font-weight:500;color:#7fb5ea;">РЕКОРД: 0</p>'
+      + '    </div>'
+      + '    <div style="display:flex;align-items:center;gap:0.4rem;">'
+      + '      <div data-lv-action="pause" style="display:none;height:2.1rem;padding:0 0.7rem;border-radius:0.5rem;border:0.08rem solid #5aa9ff;background:#163256;cursor:pointer;align-items:center;justify-content:center;">'
+      + '        <p data-lv-pause-label style="margin:0;font-family:Roboto-Bold,sans-serif;font-size:0.78rem;font-weight:700;color:#fefefe;pointer-events:none;">Пауза</p>'
+      + '      </div>'
+      + '      <div data-lv-action="exit" style="height:2.1rem;padding:0 0.75rem;border-radius:0.5rem;border:0.08rem solid rgba(255,255,255,0.35);background:rgb(55,90,118);cursor:pointer;display:flex;align-items:center;justify-content:center;">'
+      + '        <p style="margin:0;font-family:Roboto-Bold,sans-serif;font-size:0.78rem;font-weight:700;color:#fefefe;pointer-events:none;">Выйти из игры</p>'
+      + '      </div>'
+      + '    </div>'
+      + '  </div>'
+      + '  <div style="position:relative;flex:1;width:100%;overflow:hidden;">'
+      + '    <canvas data-lv-canvas style="display:block;width:100%;height:100%;"></canvas>'
+      + '    <div data-lv-overlay style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.25rem;background:rgba(5,10,20,0.78);z-index:2;text-align:center;">'
+      + '      <p data-lv-title style="margin:0;font-family:Roboto-Bold,sans-serif;font-size:1.35rem;font-weight:700;letter-spacing:0.06rem;color:#66c0ff;">LOST VEGA</p>'
+      + '      <p data-lv-msg style="margin:0.85rem 0 1.25rem;font-family:Roboto-Medium,sans-serif;font-size:0.95rem;font-weight:500;line-height:1.35rem;color:#f2f7ff;">Помоги маленькой Веге вернуться домой. Генерал Космодесантник рассчитывает на тебя !!!</p>'
+      + '      <div data-lv-action="start" style="min-width:11.5rem;height:2.85rem;padding:0 1.25rem;border-radius:0.65rem;border:0.1rem solid #79c8ff;background:rgb(55,90,118);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0.25rem 0.9rem rgba(0,140,255,0.35);">'
+      + '        <p data-lv-start-label style="margin:0;font-family:Roboto-Bold,sans-serif;font-size:0.98rem;font-weight:700;color:#fefefe;pointer-events:none;">Начать игру</p>'
+      + '      </div>'
+      + '    </div>'
+      + '  </div>'
+      + '  <div style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;padding:0.45rem 0.75rem max(0.55rem, env(safe-area-inset-bottom));background:#0c1629;border-top:0.0625rem solid rgba(110,175,255,0.28);z-index:3;">'
+      + '    <div data-lv-steer="-1" style="flex:1;background:#11203a;border:0.0625rem solid rgba(247,79,79,0.55);border-radius:0.45rem;padding:0.3rem 0.45rem;cursor:pointer;">'
+      + '      <div style="display:flex;justify-content:space-between;font-family:Roboto-Bold,sans-serif;font-size:0.68rem;color:#ffb3b3;pointer-events:none;"><span>◄ MYO-1</span><span data-lv-m1-val>0.0 В</span></div>'
+      + '      <div style="margin-top:0.2rem;height:0.32rem;background:rgba(255,255,255,0.12);border-radius:0.2rem;overflow:hidden;pointer-events:none;"><div data-lv-m1-bar style="width:0%;height:100%;background:rgb(247,79,79);"></div></div>'
+      + '    </div>'
+      + '    <div data-lv-steer="1" style="flex:1;background:#11203a;border:0.0625rem solid rgba(38,112,247,0.55);border-radius:0.45rem;padding:0.3rem 0.45rem;cursor:pointer;">'
+      + '      <div style="display:flex;justify-content:space-between;font-family:Roboto-Bold,sans-serif;font-size:0.68rem;color:#b3d4ff;pointer-events:none;"><span data-lv-m2-val>0.0 В</span><span>MYO-2 ►</span></div>'
+      + '      <div style="margin-top:0.2rem;height:0.32rem;background:rgba(255,255,255,0.12);border-radius:0.2rem;overflow:hidden;pointer-events:none;"><div data-lv-m2-bar style="width:0%;height:100%;background:rgb(38,112,247);"></div></div>'
+      + '    </div>'
+      + '  </div>'
+      + '</div>';
+    document.body.appendChild(view);
+    lostVega.view = view;
+    lostVega.canvas = view.querySelector("[data-lv-canvas]");
+    lostVega.ctx = lostVega.canvas.getContext("2d");
+
+    function bindSteer(el, dir) {
+      if (!el) return;
+      el.addEventListener("pointerdown", function (e) { e.preventDefault(); lostVega.touchDir = dir; });
+      el.addEventListener("pointerup", function () { if (lostVega.touchDir === dir) lostVega.touchDir = 0; });
+      el.addEventListener("pointercancel", function () { if (lostVega.touchDir === dir) lostVega.touchDir = 0; });
+      el.addEventListener("pointerleave", function () { if (lostVega.touchDir === dir) lostVega.touchDir = 0; });
+    }
+    bindSteer(view.querySelector('[data-lv-steer="-1"]'), -1);
+    bindSteer(view.querySelector('[data-lv-steer="1"]'), 1);
+
+    window.addEventListener("keydown", function (e) {
+      if (!lostVega.view || lostVega.view.style.display === "none") return;
+      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A" || e.key === "ф" || e.key === "Ф") lostVega.keyLeft = true;
+      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D" || e.key === "в" || e.key === "В") lostVega.keyRight = true;
+    });
+    window.addEventListener("keyup", function (e) {
+      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A" || e.key === "ф" || e.key === "Ф") lostVega.keyLeft = false;
+      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D" || e.key === "в" || e.key === "В") lostVega.keyRight = false;
+    });
+
+    return view;
+  }
+
+  function initLostVegaStars(w, h) {
+    lostVega.stars = [];
+    for (var i = 0; i < 55; i++) {
+      lostVega.stars.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: 0.7 + Math.random() * 1.6,
+        v: 28 + Math.random() * 85,
+        a: 0.35 + Math.random() * 0.65
+      });
+    }
+  }
+
+  function spawnLostVegaAsteroid(w, wall) {
+    var minX = wall + 22;
+    var maxX = w - wall - 22;
+    var r = 14 + Math.random() * 16;
+    var pts = [];
+    var count = 7 + Math.floor(Math.random() * 3);
+    for (var i = 0; i < count; i++) {
+      var ang = (i / count) * Math.PI * 2;
+      var rad = r * (0.78 + Math.random() * 0.32);
+      pts.push({ a: ang, r: rad });
+    }
+    var speedBoost = Math.min(180, lostVega.score * 0.12);
+    lostVega.asteroids.push({
+      x: minX + Math.random() * Math.max(10, maxX - minX),
+      y: -r - 10,
+      r: r,
+      vy: 125 + Math.random() * 75 + speedBoost,
+      vx: (Math.random() - 0.5) * 28,
+      rot: Math.random() * Math.PI * 2,
+      vrot: (Math.random() - 0.5) * 2.4,
+      pts: pts
+    });
+  }
+
+  function syncLostVegaHud() {
+    var view = lostVega.view;
+    if (!view) return;
+    var scoreEl = view.querySelector("[data-lv-score]");
+    var bestEl = view.querySelector("[data-lv-best]");
+    var pauseBtn = view.querySelector('[data-lv-action="pause"]');
+    var pauseLabel = view.querySelector("[data-lv-pause-label]");
+    var overlay = view.querySelector("[data-lv-overlay]");
+    var titleEl = view.querySelector("[data-lv-title]");
+    var msgEl = view.querySelector("[data-lv-msg]");
+    var startLabel = view.querySelector("[data-lv-start-label]");
+
+    if (scoreEl) scoreEl.textContent = "СЧЁТ: " + Math.floor(lostVega.score);
+    if (bestEl) bestEl.textContent = "РЕКОРД: " + Math.floor(lostVega.best);
+
+    if (lostVega.state === "intro") {
+      pauseBtn.style.display = "none";
+      overlay.style.display = "flex";
+      titleEl.textContent = "LOST VEGA";
+      msgEl.textContent = "Помоги маленькой Веге вернуться домой. Генерал Космодесантник рассчитывает на тебя !!!";
+      startLabel.textContent = "Начать игру";
+    } else if (lostVega.state === "running") {
+      pauseBtn.style.display = "flex";
+      pauseLabel.textContent = "Пауза";
+      overlay.style.display = "none";
+    } else if (lostVega.state === "paused") {
+      pauseBtn.style.display = "flex";
+      pauseLabel.textContent = "Продолжить";
+      overlay.style.display = "flex";
+      titleEl.textContent = "ПАУЗА";
+      msgEl.textContent = "Звездолёт удерживает курс. Нажми «Продолжить», чтобы лететь дальше.";
+      startLabel.textContent = "Продолжить";
+    } else if (lostVega.state === "crashed") {
+      pauseBtn.style.display = "none";
+      overlay.style.display = "flex";
+      titleEl.textContent = "СТОЛКНОВЕНИЕ С АСТЕРОИДОМ";
+      msgEl.textContent = "Счёт полёта: " + Math.floor(lostVega.score) + "  •  Рекорд: " + Math.floor(lostVega.best) + ". Помоги маленькой Веге вернуться домой!";
+      startLabel.textContent = "Начать заново";
+    }
+  }
+
+  function stepLostVega(ts) {
+    if (!lostVega.view || lostVega.view.style.display === "none") {
+      lostVega.raf = 0;
+      return;
+    }
+    var canvas = lostVega.canvas;
+    var ctx = lostVega.ctx;
+    var rect = canvas.getBoundingClientRect();
+    var w = Math.max(240, Math.round(rect.width));
+    var h = Math.max(300, Math.round(rect.height));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+      if (!lostVega.stars.length) initLostVegaStars(w, h);
+    }
+    if (!lostVega.lastTs) lostVega.lastTs = ts;
+    var dt = Math.min(0.05, Math.max(0.001, (ts - lostVega.lastTs) / 1000));
+    lostVega.lastTs = ts;
+
+    var m1 = adcToMyoVolt(bleState.myo1) || 0;
+    var m2 = adcToMyoVolt(bleState.myo2) || 0;
+    var m1Val = lostVega.view.querySelector("[data-lv-m1-val]");
+    var m2Val = lostVega.view.querySelector("[data-lv-m2-val]");
+    var m1Bar = lostVega.view.querySelector("[data-lv-m1-bar]");
+    var m2Bar = lostVega.view.querySelector("[data-lv-m2-bar]");
+    if (m1Val) m1Val.textContent = m1.toFixed(1) + " В";
+    if (m2Val) m2Val.textContent = m2.toFixed(1) + " В";
+    if (m1Bar) m1Bar.style.width = Math.min(100, Math.round((m1 / 5) * 100)) + "%";
+    if (m2Bar) m2Bar.style.width = Math.min(100, Math.round((m2 / 5) * 100)) + "%";
+
+    var wall = 14;
+    var shipRadius = 15;
+    var minShipX = wall + shipRadius + 4;
+    var maxShipX = w - wall - shipRadius - 4;
+    var shipY = h - 54;
+
+    if (lostVega.state === "running") {
+      var deadzone = 0.35;
+      var leftPull = m1 > deadzone ? (m1 - deadzone) / 3.2 : 0;
+      var rightPull = m2 > deadzone ? (m2 - deadzone) / 3.2 : 0;
+      var steer = rightPull - leftPull;
+      if (lostVega.keyLeft || lostVega.touchDir < 0) steer -= 0.85;
+      if (lostVega.keyRight || lostVega.touchDir > 0) steer += 0.85;
+      steer = Math.max(-1.25, Math.min(1.25, steer));
+
+      var pxX = minShipX + lostVega.shipX * (maxShipX - minShipX);
+      pxX += steer * 235 * dt;
+      if (pxX < minShipX) pxX = minShipX;
+      if (pxX > maxShipX) pxX = maxShipX;
+      lostVega.shipX = (pxX - minShipX) / Math.max(1, maxShipX - minShipX);
+
+      lostVega.score += dt * 25;
+      if (lostVega.score > lostVega.best) {
+        lostVega.best = Math.floor(lostVega.score);
+        try { localStorage.setItem("vega-lost-vega-best", String(lostVega.best)); } catch (_e) {}
+      }
+      var scoreEl = lostVega.view.querySelector("[data-lv-score]");
+      var bestEl = lostVega.view.querySelector("[data-lv-best]");
+      if (scoreEl) scoreEl.textContent = "СЧЁТ: " + Math.floor(lostVega.score);
+      if (bestEl) bestEl.textContent = "РЕКОРД: " + Math.floor(lostVega.best);
+
+      lostVega.spawnTimer -= dt;
+      if (lostVega.spawnTimer <= 0) {
+        spawnLostVegaAsteroid(w, wall);
+        var interval = Math.max(0.34, 0.88 - Math.min(0.48, lostVega.score * 0.0006));
+        lostVega.spawnTimer = interval;
+      }
+
+      for (var s = 0; s < lostVega.stars.length; s++) {
+        lostVega.stars[s].y += lostVega.stars[s].v * dt;
+        if (lostVega.stars[s].y > h) {
+          lostVega.stars[s].y = 0;
+          lostVega.stars[s].x = Math.random() * w;
+        }
+      }
+
+      for (var i = lostVega.asteroids.length - 1; i >= 0; i--) {
+        var ast = lostVega.asteroids[i];
+        ast.y += ast.vy * dt;
+        ast.x += ast.vx * dt;
+        ast.rot += ast.vrot * dt;
+        if (ast.x - ast.r < wall) {
+          ast.x = wall + ast.r;
+          ast.vx = Math.abs(ast.vx);
+        } else if (ast.x + ast.r > w - wall) {
+          ast.x = w - wall - ast.r;
+          ast.vx = -Math.abs(ast.vx);
+        }
+        var dx = ast.x - pxX;
+        var dy = ast.y - shipY;
+        var hitDist = ast.r * 0.84 + shipRadius * 0.78;
+        if (dx * dx + dy * dy <= hitDist * hitDist) {
+          lostVega.state = "crashed";
+          syncLostVegaHud();
+          break;
+        }
+        if (ast.y - ast.r > h + 24) {
+          lostVega.asteroids.splice(i, 1);
+        }
+      }
+    }
+
+    ctx.fillStyle = "#060b16";
+    ctx.fillRect(0, 0, w, h);
+
+    for (var j = 0; j < lostVega.stars.length; j++) {
+      var st = lostVega.stars[j];
+      ctx.fillStyle = "rgba(210, 232, 255, " + st.a.toFixed(2) + ")";
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Left and right hull walls (borders)
+    ctx.fillStyle = "rgba(42, 118, 210, 0.22)";
+    ctx.fillRect(0, 0, wall, h);
+    ctx.fillRect(w - wall, 0, wall, h);
+    ctx.strokeStyle = "#4da6ff";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(wall, 0);
+    ctx.lineTo(wall, h);
+    ctx.moveTo(w - wall, 0);
+    ctx.lineTo(w - wall, h);
+    ctx.stroke();
+
+    // Asteroids
+    for (var k = 0; k < lostVega.asteroids.length; k++) {
+      var a = lostVega.asteroids[k];
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(a.rot);
+      ctx.beginPath();
+      for (var p = 0; p < a.pts.length; p++) {
+        var pt = a.pts[p];
+        var ax = Math.cos(pt.a) * pt.r;
+        var ay = Math.sin(pt.a) * pt.r;
+        if (p === 0) ctx.moveTo(ax, ay);
+        else ctx.lineTo(ax, ay);
+      }
+      ctx.closePath();
+      ctx.fillStyle = "#596579";
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#93a3bc";
+      ctx.stroke();
+      ctx.fillStyle = "#3f4959";
+      ctx.beginPath();
+      ctx.arc(a.r * 0.22, -a.r * 0.18, a.r * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Vega starship
+    var drawShipX = minShipX + lostVega.shipX * (maxShipX - minShipX);
+    ctx.save();
+    ctx.translate(drawShipX, shipY);
+
+    if (lostVega.state === "running") {
+      var flame = 10 + Math.random() * 9;
+      ctx.fillStyle = "#ff942e";
+      ctx.beginPath();
+      ctx.moveTo(-5, 13);
+      ctx.lineTo(0, 13 + flame);
+      ctx.lineTo(5, 13);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    ctx.fillStyle = lostVega.state === "crashed" ? "#ff5252" : "#dceeff";
+    ctx.strokeStyle = "#48a8ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -18);
+    ctx.lineTo(15, 13);
+    ctx.lineTo(6, 9);
+    ctx.lineTo(0, 14);
+    ctx.lineTo(-6, 9);
+    ctx.lineTo(-15, 13);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#2997ff";
+    ctx.beginPath();
+    ctx.ellipse(0, -3, 4, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    lostVega.raf = requestAnimationFrame(stepLostVega);
+  }
+
+  function startLostVegaRound() {
+    lostVega.score = 0;
+    lostVega.shipX = 0.5;
+    lostVega.asteroids = [];
+    lostVega.spawnTimer = 0.35;
+    lostVega.state = "running";
+    lostVega.lastTs = 0;
+    syncLostVegaHud();
+  }
+
+  function toggleLostVegaPause() {
+    if (lostVega.state === "running") {
+      lostVega.state = "paused";
+      syncLostVegaHud();
+    } else if (lostVega.state === "paused") {
+      lostVega.state = "running";
+      lostVega.lastTs = 0;
+      syncLostVegaHud();
+    }
+  }
+
+  function openLostVega() {
+    var view = ensureLostVegaView();
+    lostVega.state = "intro";
+    lostVega.score = 0;
+    lostVega.shipX = 0.5;
+    lostVega.asteroids = [];
+    lostVega.lastTs = 0;
+    view.style.display = "block";
+    setTabBarsHidden(true);
+    lockOverlayScroll();
+    syncLostVegaHud();
+    if (!lostVega.raf) lostVega.raf = requestAnimationFrame(stepLostVega);
+  }
+
+  function closeLostVega() {
+    if (!lostVega.view) return;
+    lostVega.view.style.display = "none";
+    lostVega.state = "intro";
+    lostVega.keyLeft = false;
+    lostVega.keyRight = false;
+    lostVega.touchDir = 0;
+    if (lostVega.raf) {
+      cancelAnimationFrame(lostVega.raf);
+      lostVega.raf = 0;
+    }
+    setTabBarsHidden(false);
+    restoreOverlayScroll();
+  }
+
   function openGripLoad() {
     pendingMode = "";
     editingSensor = "";
@@ -3171,6 +3582,8 @@
     "Пользовательский режим": 1,
     "Сервисный режим протеза": 1,
     "Расширенные настройки": 1,
+    "Дополнительные функции": 1,
+    "Игра \"Lost Vega\"": 1,
     "Персонализация": 1,
     "Параметры устройств": 1,
     "Параметры беспроводной связи": 1,
@@ -3264,6 +3677,10 @@
     var mapArea = document.getElementById("vega-map-scroll");
     if (mapArea && node && mapArea.contains(node)) return null;
     if (node && node.closest && node.closest(".gm-legend")) return null;
+    var lvView = document.getElementById("vega-lost-vega");
+    if (lvView && node && lvView.contains(node)) {
+      return node.closest ? node.closest("[data-lv-action]") : null;
+    }
     var pencil = pencilOf(node);
     if (pencil) return pencil;
     var icon = headerIcon(node);
@@ -3337,6 +3754,25 @@
 
   document.addEventListener("click", function (event) {
     if (event.target === scrim) return;
+    var lvView = document.getElementById("vega-lost-vega");
+    if (lvView && lvView.style.display !== "none" && (event.target === lvView || lvView.contains(event.target))) {
+      var lvBtn = event.target.closest ? event.target.closest("[data-lv-action]") : null;
+      if (lvBtn) {
+        var act = lvBtn.getAttribute("data-lv-action");
+        if (act === "exit") closeLostVega();
+        else if (act === "pause") toggleLostVegaPause();
+        else if (act === "start") {
+          if (lostVega.state === "paused") toggleLostVegaPause();
+          else startLostVegaRound();
+        }
+      }
+      return;
+    }
+    var openLv = event.target && event.target.closest ? event.target.closest("[data-vega-open-lost-vega]") : null;
+    if (openLv) {
+      openLostVega();
+      return;
+    }
     var gripView = document.getElementById("vega-grip-view");
     if (gripView && gripView.style.display !== "none" && (event.target === gripView || gripView.contains(event.target))) {
       hideOverlays();
