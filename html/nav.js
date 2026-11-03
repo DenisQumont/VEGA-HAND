@@ -1846,6 +1846,72 @@
     row.dataset.vegaBuilt = "1";
   }
 
+  var gripMapWidthRem = 0;
+
+  function renderMxDiagrams() {
+    var nodes = document.querySelectorAll("#vega-root .mxgraph");
+    if (!nodes.length) return;
+    function run() {
+      if (!window.GraphViewer) return;
+      for (var i = 0; i < nodes.length; i++) {
+        if (nodes[i].dataset.vegaMx === "1") continue;
+        nodes[i].dataset.vegaMx = "1";
+        try {
+          window.GraphViewer.createViewerForElement(nodes[i]);
+        } catch (_e) {}
+      }
+    }
+    if (window.GraphViewer) {
+      run();
+      return;
+    }
+    var script = document.getElementById("vega-mx-script");
+    if (!script) {
+      script = document.createElement("script");
+      script.id = "vega-mx-script";
+      script.src = "https://viewer.diagrams.net/js/viewer-static.min.js";
+      document.head.appendChild(script);
+    }
+    script.addEventListener("load", run, { once: true });
+  }
+
+  function mountGripMap() {
+    gripMapWidthRem = 0;
+    renderMxDiagrams();
+  }
+
+  function zoomGripMap(action) {
+    var canvas = document.getElementById("vega-map-canvas");
+    if (!canvas) return;
+    if (action === "fit") {
+      gripMapWidthRem = 0;
+      canvas.classList.add("is-fit");
+      canvas.style.width = "";
+    } else {
+      var base = gripMapWidthRem || 48;
+      gripMapWidthRem = action === "in" ? Math.min(140, base + 22) : Math.max(20, base - 22);
+      if (gripMapWidthRem <= 20) {
+        gripMapWidthRem = 0;
+        canvas.classList.add("is-fit");
+        canvas.style.width = "";
+      } else {
+        canvas.classList.remove("is-fit");
+        canvas.style.width = gripMapWidthRem + "rem";
+      }
+    }
+    var box = canvas.querySelector(".mxgraph");
+    if (box && window.GraphViewer) {
+      var data = box.getAttribute("data-mxgraph");
+      box.innerHTML = "";
+      box.style.width = "";
+      box.style.height = "";
+      box.setAttribute("data-mxgraph", data);
+      try {
+        window.GraphViewer.createViewerForElement(box);
+      } catch (_e) {}
+    }
+  }
+
   function ensureGripViewer() {
     var view = document.getElementById("vega-grip-view");
     if (view) return view;
@@ -3389,6 +3455,15 @@
       return;
     }
 
+    var mapBtn = event.target;
+    while (mapBtn && mapBtn !== document.body && (!mapBtn.getAttribute || !mapBtn.getAttribute("data-vega-map-zoom"))) {
+      mapBtn = mapBtn.parentElement;
+    }
+    if (mapBtn && mapBtn !== document.body && mapBtn.getAttribute("data-vega-map-zoom")) {
+      zoomGripMap(mapBtn.getAttribute("data-vega-map-zoom"));
+      return;
+    }
+
     var libraryCard = event.target;
     while (libraryCard && libraryCard !== document.body) {
       if (libraryCard.getAttribute && libraryCard.getAttribute("data-vega-grip-card")) break;
@@ -3470,6 +3545,7 @@
     paintMonitorSensitivity();
     renderGripLibrary();
     bindGripScroll();
+    mountGripMap();
     hideIconBesideNotification();
     ensureUpButton();
     paintLink();
