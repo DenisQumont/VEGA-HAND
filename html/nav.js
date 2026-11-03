@@ -1846,108 +1846,7 @@
     row.dataset.vegaBuilt = "1";
   }
 
-  var gripMapWidthRem = 72;
-  var MAP_CIRCLE_GRIPS = [0, 1, 2, 3, 13, 14, 4, 5, 6, 15, 16, 11, 12, 7, 8, 9, 10];
-
-  function fitLegendViewer(box, viewer) {
-    if (!box) return;
-    setTimeout(function () {
-      var svg = box.querySelector("svg");
-      if (!svg) return;
-      try {
-        var g = viewer && viewer.graph ? viewer.graph.getGraphBounds() : svg.getBBox();
-        if (!g || !g.width || !g.height) return;
-        var pad = 16;
-        svg.setAttribute("viewBox", (g.x - pad) + " " + (g.y - pad) + " " + (g.width + pad * 2) + " " + (g.height + pad * 2));
-        svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-        svg.style.width = "100%";
-        svg.style.height = "auto";
-        svg.style.minWidth = "0";
-        svg.style.minHeight = "0";
-        svg.style.display = "block";
-        box.style.width = "100%";
-        box.style.height = "auto";
-        box.style.overflow = "visible";
-      } catch (_e) {}
-    }, 30);
-  }
-
-  function decorateMapCircles(box) {
-    if (!box) return;
-    setTimeout(function () {
-      var svg = box.querySelector("svg");
-      if (!svg) return;
-      var ellipses = svg.querySelectorAll("ellipse");
-      var old = svg.querySelectorAll("[data-vega-map-circle], [data-vega-map-clip]");
-      for (var r = 0; r < old.length; r++) old[r].parentNode.removeChild(old[r]);
-      if (ellipses.length < MAP_CIRCLE_GRIPS.length) return;
-      var ns = "http://www.w3.org/2000/svg";
-      var defs = svg.querySelector("defs");
-      if (!defs) {
-        defs = document.createElementNS(ns, "defs");
-        svg.insertBefore(defs, svg.firstChild);
-      }
-      for (var i = 0; i < MAP_CIRCLE_GRIPS.length; i++) {
-        var grip = MAP_CIRCLE_GRIPS[i];
-        var el = ellipses[i];
-        var cx = parseFloat(el.getAttribute("cx") || "0");
-        var cy = parseFloat(el.getAttribute("cy") || "0");
-        var rx = parseFloat(el.getAttribute("rx") || "0");
-        var ry = parseFloat(el.getAttribute("ry") || "0");
-        var rad = Math.max(4, Math.min(rx, ry) - 3);
-        var clipId = "vega-map-clip-" + i;
-        var clip = document.createElementNS(ns, "clipPath");
-        clip.setAttribute("id", clipId);
-        clip.setAttribute("data-vega-map-clip", "1");
-        var clipCircle = document.createElementNS(ns, "circle");
-        clipCircle.setAttribute("cx", String(cx));
-        clipCircle.setAttribute("cy", String(cy));
-        clipCircle.setAttribute("r", String(rad));
-        clip.appendChild(clipCircle);
-        defs.appendChild(clip);
-
-        var group = document.createElementNS(ns, "g");
-        group.setAttribute("data-vega-map-circle", String(grip));
-        group.setAttribute("clip-path", "url(#" + clipId + ")");
-        if (grip < 15) group.style.cursor = "pointer";
-
-        var bg = document.createElementNS(ns, "circle");
-        bg.setAttribute("cx", String(cx));
-        bg.setAttribute("cy", String(cy));
-        bg.setAttribute("r", String(rad));
-        bg.setAttribute("fill", "#f7f7f7");
-        group.appendChild(bg);
-
-        if (grip >= 15) {
-          var txt = document.createElementNS(ns, "text");
-          txt.setAttribute("x", String(cx));
-          txt.setAttribute("y", String(cy));
-          txt.setAttribute("text-anchor", "middle");
-          txt.setAttribute("dominant-baseline", "central");
-          txt.setAttribute("fill", "#222");
-          txt.setAttribute("font-family", "Roboto-Bold, sans-serif");
-          txt.setAttribute("font-weight", "700");
-          txt.setAttribute("font-size", String(Math.round(rad * 1.15)));
-          txt.textContent = "?";
-          group.appendChild(txt);
-        } else {
-          var img = document.createElementNS(ns, "image");
-          img.setAttribute("href", "../grip_img/grip" + grip + ".JPG");
-          img.setAttributeNS("http://www.w3.org/1999/xlink", "href", "../grip_img/grip" + grip + ".JPG");
-          img.setAttribute("x", String(cx - rad));
-          img.setAttribute("y", String(cy - rad));
-          img.setAttribute("width", String(rad * 2));
-          img.setAttribute("height", String(rad * 2));
-          img.setAttribute("preserveAspectRatio", "xMidYMid slice");
-          group.appendChild(img);
-        }
-
-        el.parentNode.insertBefore(group, el);
-        el.setAttribute("fill", "none");
-        el.style.pointerEvents = "none";
-      }
-    }, 30);
-  }
+  var gripMapWidthRem = 68;
 
   function bindGripMapPinch() {
     var scroll = document.getElementById("vega-map-scroll");
@@ -1955,8 +1854,8 @@
     if (!scroll || !canvas || scroll.dataset.vegaPinch === "1") return;
     scroll.dataset.vegaPinch = "1";
     var startDist = 0;
-    var startRem = 72;
-    var lastRem = 72;
+    var startRem = 68;
+    var lastRem = 68;
     function touchDist(touches) {
       var dx = touches[0].clientX - touches[1].clientX;
       var dy = touches[0].clientY - touches[1].clientY;
@@ -1974,69 +1873,26 @@
         event.preventDefault();
         var ratio = touchDist(event.touches) / startDist;
         lastRem = Math.max(20, Math.min(140, Math.round(startRem * ratio)));
-        canvas.classList.remove("is-fit");
-        canvas.style.width = lastRem + "rem";
+        if (lastRem <= 20) {
+          canvas.classList.add("is-fit");
+          canvas.style.width = "";
+        } else {
+          canvas.classList.remove("is-fit");
+          canvas.style.width = lastRem + "rem";
+        }
       }
     }, { passive: false });
     scroll.addEventListener("touchend", function (event) {
       if (startDist > 0 && event.touches.length < 2) {
         startDist = 0;
-        gripMapWidthRem = lastRem;
-        var box = canvas.querySelector(".mxgraph");
-        if (box && window.GraphViewer) {
-          var data = box.getAttribute("data-mxgraph");
-          box.innerHTML = "";
-          box.style.width = "";
-          box.style.height = "";
-          box.style.position = "relative";
-          box.setAttribute("data-mxgraph", data);
-          try {
-            window.GraphViewer.createViewerForElement(box, function () { decorateMapCircles(box); });
-          } catch (_e) {}
-        }
+        gripMapWidthRem = lastRem <= 20 ? 0 : lastRem;
       }
     }, { passive: true });
   }
 
-  function renderMxDiagrams() {
-    var nodes = document.querySelectorAll("#vega-root .mxgraph");
-    if (!nodes.length) return;
-    function run() {
-      if (!window.GraphViewer) return;
-      for (var i = 0; i < nodes.length; i++) {
-        if (nodes[i].dataset.vegaMx === "1") continue;
-        nodes[i].dataset.vegaMx = "1";
-        nodes[i].style.position = "relative";
-        (function (node) {
-          var isMap = node.id === "vega-map-mx";
-          var isLegend = node.id === "vega-legend-mx";
-          try {
-            window.GraphViewer.createViewerForElement(node, function (viewer) {
-              if (isMap) decorateMapCircles(node);
-              if (isLegend) fitLegendViewer(node, viewer);
-            });
-          } catch (_e) {}
-        })(nodes[i]);
-      }
-    }
-    if (window.GraphViewer) {
-      run();
-      return;
-    }
-    var script = document.getElementById("vega-mx-script");
-    if (!script) {
-      script = document.createElement("script");
-      script.id = "vega-mx-script";
-      script.src = "https://viewer.diagrams.net/js/viewer-static.min.js";
-      document.head.appendChild(script);
-    }
-    script.addEventListener("load", run, { once: true });
-  }
-
   function mountGripMap() {
-    gripMapWidthRem = 72;
+    gripMapWidthRem = 68;
     bindGripMapPinch();
-    renderMxDiagrams();
   }
 
   function zoomGripMap(action) {
@@ -2048,7 +1904,7 @@
       canvas.style.width = "";
     } else {
       var base = gripMapWidthRem || 20;
-      gripMapWidthRem = action === "in" ? Math.min(130, base + 22) : Math.max(20, base - 22);
+      gripMapWidthRem = action === "in" ? Math.min(140, base + 22) : Math.max(20, base - 22);
       if (gripMapWidthRem <= 20) {
         gripMapWidthRem = 0;
         canvas.classList.add("is-fit");
@@ -2057,18 +1913,6 @@
         canvas.classList.remove("is-fit");
         canvas.style.width = gripMapWidthRem + "rem";
       }
-    }
-    var box = canvas.querySelector(".mxgraph");
-    if (box && window.GraphViewer) {
-      var data = box.getAttribute("data-mxgraph");
-      box.innerHTML = "";
-      box.style.width = "";
-      box.style.height = "";
-      box.style.position = "relative";
-      box.setAttribute("data-mxgraph", data);
-      try {
-        window.GraphViewer.createViewerForElement(box, function () { decorateMapCircles(box); });
-      } catch (_e) {}
     }
   }
 
