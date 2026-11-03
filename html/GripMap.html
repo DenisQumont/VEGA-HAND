@@ -5,102 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Карта схватов</title>
   <style>
-    @font-face {
-      font-family: "Roboto-Bold";
-      font-style: normal;
-      font-weight: 700;
-      src: url(font/Roboto-Bold_1.ttf) format(truetype);
-    }
-    @font-face {
-      font-family: "Roboto-Regular";
-      font-style: normal;
-      font-weight: 400;
-      src: url(font/Roboto-Regular_1.ttf) format(truetype);
-    }
-    @font-face {
-      font-family: "Roboto-Medium";
-      font-style: normal;
-      font-weight: 500;
-      src: url(font/Roboto-Medium_1.ttf) format(truetype);
-    }
+    @font-face { font-family: "Roboto-Bold"; font-weight: 700; src: url(font/Roboto-Bold_1.ttf) format(truetype); }
+    @font-face { font-family: "Roboto-Medium"; font-weight: 500; src: url(font/Roboto-Medium_1.ttf) format(truetype); }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      min-height: 100%;
-      background: #fefefe;
-      color: #222;
-    }
-    .screen {
-      width: 22.5rem;
-      margin: 0 auto;
-      padding: 1.25rem 1.25rem 5.25rem;
-    }
-    .logo {
-      width: 2.75rem;
-      height: 2.75rem;
-      background-image: url(./image/13b1723ea54643ea7dc01edf27018e703193c347.png);
-      background-size: cover;
-      background-position: center;
-    }
-    h1 {
-      margin-top: 1rem;
-      font-family: "Roboto-Bold", sans-serif;
-      font-size: 1.375rem;
-      font-weight: 700;
-      line-height: 1.375rem;
-    }
-    .stub {
-      margin-top: 1.25rem;
-      padding: 1rem 1.125rem;
-      border: 0.125rem solid #222;
-      border-radius: 0.875rem;
-    }
-    .stub p {
-      font-family: "Roboto-Medium", sans-serif;
-      font-size: 0.875rem;
-      line-height: 1.25rem;
-      color: #222;
-    }
-    .stub p + p {
-      margin-top: 0.5rem;
-      font-family: "Roboto-Regular", sans-serif;
-      color: #8a8989;
-    }
-    .tabbar {
-      position: fixed;
-      z-index: 2;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 22.5rem;
-      height: 4.25rem;
-      margin: 0 auto;
-      background: #fefefe;
-      border-top: 0.0625rem solid #000;
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-    }
-    .tab {
-      width: 3.625rem;
-      height: 3.625rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0.15rem;
-    }
-    .tab img {
-      width: 1.875rem;
-      height: 1.875rem;
-      object-fit: contain;
-    }
-    .tab p {
-      font-family: "Roboto-Bold", sans-serif;
-      font-size: 0.625rem;
-      font-weight: 700;
-      line-height: 0.75rem;
-      text-align: center;
-    }
+    body { min-height: 100%; background: #fefefe; color: #222; }
+    .screen { width: 22.5rem; margin: 0 auto; padding: 1.25rem 1.25rem 5.25rem; }
+    .logo { width: 2.75rem; height: 2.75rem; background: url(./image/13b1723ea54643ea7dc01edf27018e703193c347.png) center/cover; }
+    h1 { margin-top: 1rem; font-family: "Roboto-Bold", sans-serif; font-size: 1.375rem; line-height: 1.375rem; }
+    .gm-scroll { margin-top: 0.75rem; height: calc(100svh - 10.5rem); min-height: 18rem; overflow: auto; border: 0.0625rem solid rgba(34,34,34,0.22); border-radius: 0.75rem; background: #fff; -webkit-overflow-scrolling: touch; }
+    .gm-stage { position: relative; width: 104.366rem; height: 50.735rem; }
+    .gm-draw { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+    .gm-grip { position: absolute; z-index: 2; width: 4.6rem; height: 4.6rem; }
+    .gm-grip img, .gm-grip .gm-q { width: 4.6rem; height: 4.6rem; border-radius: 50%; border: 0.16rem solid #222; background: #f7f7f7; object-fit: cover; display: flex; align-items: center; justify-content: center; font-family: "Roboto-Bold", sans-serif; font-size: 2.25rem; color: #222; }
+    .gm-label { position: absolute; z-index: 3; overflow: hidden; white-space: nowrap; font-family: "Roboto-Bold", sans-serif; font-size: 0.62rem; font-weight: 700; line-height: 0.78rem; color: #222; background: #fff; }
+    .gm-label.gm-mid { display: flex; align-items: center; justify-content: center; text-align: center; }
+    .tabbar { position: fixed; z-index: 4; left: 0; right: 0; bottom: 0; width: 22.5rem; height: 4.25rem; margin: 0 auto; background: #fefefe; border-top: 0.0625rem solid #000; display: flex; align-items: center; justify-content: space-around; }
+    .tab { width: 3.625rem; height: 3.625rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; }
+    .tab img { width: 1.875rem; height: 1.875rem; object-fit: contain; }
+    .tab p { font-family: "Roboto-Bold", sans-serif; font-size: 0.625rem; line-height: 0.75rem; text-align: center; }
   </style>
   <link rel="stylesheet" href="fit.css?v=12">
 </head>
@@ -108,27 +30,117 @@
   <div class="screen">
     <div class="logo"></div>
     <h1>Карта схватов</h1>
-    <div class="stub">
-      <p>Экран в разработке</p>
-    </div>
+    <div class="gm-scroll"><div class="gm-stage">
+        <svg class="gm-draw" viewBox="-1319.0 -1017.0 3857.0 1875.0" preserveAspectRatio="xMinYMin meet">
+        <rect x="1080.0" y="170.0" width="580.0" height="230.0" rx="18" fill="#fff" stroke="#222" stroke-width="4"/>
+        <rect x="1870.0" y="170.0" width="580.0" height="230.0" rx="18" fill="#fff" stroke="#222" stroke-width="4"/>
+        <rect x="33.0" y="-445.0" width="734.0" height="230.0" rx="18" fill="#fff" stroke="#222" stroke-width="4"/>
+        <rect x="-442.0" y="514.0" width="580.0" height="230.0" rx="18" fill="#fff" stroke="#222" stroke-width="4"/>
+        <rect x="-1210.0" y="520.0" width="580.0" height="230.0" rx="18" fill="#fff" stroke="#222" stroke-width="4"/>
+        <path d="M -201.57 285.00 L -201.57 275.00 L 286.00 275.00 L 286.00 263.00 L 308.00 280.00 L 286.00 297.00 L 286.00 285.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 2.00 -600.00 L 2.00 -610.00 L 206.00 -610.00 L 206.00 -622.00 L 228.00 -605.00 L 206.00 -588.00 L 206.00 -600.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 2.00 -772.00 L 2.00 -782.00 L 206.00 -782.00 L 206.00 -794.00 L 228.00 -777.00 L 206.00 -760.00 L 206.00 -772.00 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 2.00 -852.00 L 2.00 -862.00 L 206.00 -862.00 L 206.00 -874.00 L 228.00 -857.00 L 206.00 -840.00 L 206.00 -852.00 Z" fill="#008a00" stroke="#005700" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 5.00 -932.00 L 5.00 -942.00 L 209.00 -942.00 L 209.00 -954.00 L 231.00 -937.00 L 209.00 -920.00 L 209.00 -932.00 Z" fill="#647687" stroke="#314354" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 492.00 289.50 L 492.00 279.50 L 662.57 279.50 L 662.57 267.50 L 684.57 284.50 L 662.57 301.50 L 662.57 289.50 Z" fill="#647687" stroke="#314354" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 862.00 289.50 L 862.00 279.50 L 1066.00 279.50 L 1066.00 267.50 L 1088.00 284.50 L 1066.00 301.50 L 1066.00 289.50 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 5.00 -691.00 L 5.00 -701.00 L 109.00 -701.00 L 109.00 -713.00 L 131.00 -696.00 L 109.00 -679.00 L 109.00 -691.00 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 81.00 -519.00 L 81.00 -509.00 L 37.00 -509.00 L 37.00 -497.00 L 15.00 -514.00 L 37.00 -531.00 L 37.00 -519.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 1332.00 215.00 L 1332.00 205.00 L 1436.00 205.00 L 1436.00 193.00 L 1458.00 210.00 L 1436.00 227.00 L 1436.00 215.00 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 1408.00 290.00 L 1408.00 300.00 L 1364.00 300.00 L 1364.00 312.00 L 1342.00 295.00 L 1364.00 278.00 L 1364.00 290.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 2122.00 215.00 L 2122.00 205.00 L 2226.00 205.00 L 2226.00 193.00 L 2248.00 210.00 L 2226.00 227.00 L 2226.00 215.00 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 2198.00 290.00 L 2198.00 300.00 L 2154.00 300.00 L 2154.00 312.00 L 2132.00 295.00 L 2154.00 278.00 L 2154.00 290.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 785.00 188.00 L 775.00 188.00 L 775.00 -5.00 L 2205.00 -5.00 L 2205.00 136.00 L 2217.00 136.00 L 2200.00 158.00 L 2183.00 136.00 L 2195.00 136.00 L 2195.00 5.00 L 785.00 5.00 Z" fill="#008a00" stroke="#005700" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 1687.00 299.50 L 1687.00 311.50 L 1662.00 294.50 L 1687.00 277.50 L 1687.00 289.50 L 1841.48 289.50 L 1841.48 277.50 L 1863.48 294.50 L 1841.48 311.50 L 1841.48 299.50 Z" fill="#008a00" stroke="#005700" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 399.50 198.00 L 389.50 198.00 L 389.50 -184.17 L 377.50 -184.17 L 394.50 -206.17 L 411.50 -184.17 L 399.50 -184.17 Z" fill="#e51400" stroke="#B20000" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 369.00 -400.00 L 369.00 -410.00 L 473.00 -410.00 L 473.00 -422.00 L 495.00 -405.00 L 473.00 -388.00 L 473.00 -400.00 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 445.00 -325.00 L 445.00 -315.00 L 401.00 -315.00 L 401.00 -303.00 L 379.00 -320.00 L 401.00 -337.00 L 401.00 -325.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 389.50 410.00 L 399.50 410.00 L 399.50 527.55 L 411.50 527.55 L 394.50 549.55 L 377.50 527.55 L 389.50 527.55 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 487.00 633.00 L 487.00 623.00 L 755.40 623.00 L 755.40 611.00 L 777.40 628.00 L 755.40 645.00 L 755.40 633.00 Z" fill="#008a00" stroke="#005700" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 769.00 -325.50 L 769.00 -335.50 L 973.00 -335.50 L 973.00 -347.50 L 995.00 -330.50 L 973.00 -313.50 L 973.00 -325.50 Z" fill="#008a00" stroke="#005700" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 1203.00 -318.50 L 1203.00 -306.50 L 1178.00 -323.50 L 1203.00 -340.50 L 1203.00 -328.50 L 1406.36 -328.50 L 1406.36 -340.50 L 1428.36 -323.50 L 1406.36 -306.50 L 1406.36 -318.50 Z" fill="#008a00" stroke="#005700" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 952.00 633.00 L 952.00 623.00 L 1220.40 623.00 L 1220.40 611.00 L 1242.40 628.00 L 1220.40 645.00 L 1220.40 633.00 Z" fill="#008a00" stroke="#005700" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 1328.24 568.70 L 1318.38 567.00 L 1329.06 505.00 L 435.14 505.00 L 435.14 517.00 L 413.14 500.00 L 435.14 483.00 L 435.14 495.00 L 1340.94 495.00 Z" fill="#008a00" stroke="#005700" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M 289.91 346.45 L 296.98 353.52 L 167.39 483.11 L 175.87 491.60 L 148.29 495.14 L 151.83 467.56 L 160.32 476.04 Z" fill="#008a00" stroke="#005700" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M -55.77 629.95 L -56.03 639.95 L -221.38 635.71 L -221.68 647.71 L -243.24 630.15 L -220.81 613.72 L -221.12 625.72 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M -255.00 582.00 L -255.00 572.00 L -51.00 572.00 L -51.00 560.00 L -29.00 577.00 L -51.00 594.00 L -51.00 582.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M -823.77 635.95 L -824.03 645.95 L -989.38 641.71 L -989.68 653.71 L -1011.24 636.15 L -988.81 619.72 L -989.12 631.72 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M -1023.00 588.00 L -1023.00 578.00 L -819.00 578.00 L -819.00 566.00 L -797.00 583.00 L -819.00 600.00 L -819.00 588.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4" stroke-linejoin="miter"/>
+        <path d="M -610.00 636.50 L -610.00 648.50 L -635.00 631.50 L -610.00 614.50 L -610.00 626.50 L -455.52 626.50 L -455.52 614.50 L -433.52 631.50 L -455.52 648.50 L -455.52 636.50 Z" fill="#008a00" stroke="#005700" stroke-width="4" stroke-linejoin="miter"/>
+        <rect x="73.0" y="-726.0" width="10.0" height="60.0" fill="#0050ef"/>
+        <rect x="3.0" y="-544.0" width="10.0" height="60.0" fill="#e51400"/>
+        <rect x="1400.0" y="180.0" width="10.0" height="60.0" fill="#0050ef"/>
+        <rect x="1330.0" y="265.0" width="10.0" height="60.0" fill="#e51400"/>
+        <rect x="2190.0" y="180.0" width="10.0" height="60.0" fill="#0050ef"/>
+        <rect x="2120.0" y="265.0" width="10.0" height="60.0" fill="#e51400"/>
+        <rect x="437.0" y="-435.0" width="10.0" height="60.0" fill="#0050ef"/>
+        <rect x="367.0" y="-350.0" width="10.0" height="60.0" fill="#e51400"/>
+        </svg>
+        <div class="gm-grip" style="left:44.079rem;top:32.931rem"><img src="../grip_img/grip0.JPG" alt="Раскрытая ладонь: №0"></div>
+        <div class="gm-grip" style="left:54.361rem;top:32.931rem"><img src="../grip_img/grip1.JPG" alt="Нейтральный схват: №1"></div>
+        <div class="gm-grip" style="left:65.996rem;top:32.931rem"><img src="../grip_img/grip2.JPG" alt="Силовой схват: №2"></div>
+        <div class="gm-grip" style="left:75.196rem;top:32.931rem"><img src="../grip_img/grip3.JPG" alt="Кулачный схват: №3"></div>
+        <div class="gm-grip" style="left:39.939rem;top:16.289rem"><img src="../grip_img/grip4.JPG" alt="Схват удержания чашки: №4"></div>
+        <div class="gm-grip" style="left:49.139rem;top:16.289rem"><img src="../grip_img/grip5.JPG" alt="Удерживающий схват: №5"></div>
+        <div class="gm-grip" style="left:44.214rem;top:42.455rem"><img src="../grip_img/grip6.JPG" alt="Цилиндрический схват: №6"></div>
+        <div class="gm-grip" style="left:34.338rem;top:42.401rem"><img src="../grip_img/grip7.JPG" alt="Плоская ладонь: №7"></div>
+        <div class="gm-grip" style="left:24.326rem;top:42.401rem"><img src="../grip_img/grip8.JPG" alt="Схват для нажатия №8"></div>
+        <div class="gm-grip" style="left:13.556rem;top:42.564rem"><img src="../grip_img/grip9.JPG" alt="Указательный жест: №9"></div>
+        <div class="gm-grip" style="left:3.545rem;top:42.564rem"><img src="../grip_img/grip10.JPG" alt="Схват удержания карты №10"></div>
+        <div class="gm-grip" style="left:56.796rem;top:42.104rem"><img src="../grip_img/grip11.JPG" alt="Трехпалый щепоть: №11"></div>
+        <div class="gm-grip" style="left:69.514rem;top:42.104rem"><img src="../grip_img/grip12.JPG" alt="Двухпалый щепоть: №12"></div>
+        <div class="gm-grip" style="left:87.373rem;top:32.931rem"><img src="../grip_img/grip13.JPG" alt="Боковой схват: №13"></div>
+        <div class="gm-grip" style="left:96.573rem;top:32.931rem"><img src="../grip_img/grip14.JPG" alt="Закрытый схват: №14"></div>
+        <div class="gm-grip" style="left:62.749rem;top:16.506rem"><span class="gm-q">?</span></div>
+        <div class="gm-grip" style="left:74.574rem;top:16.506rem"><span class="gm-q">?</span></div>
+        <p class="gm-label" style="left:43.348rem;top:37.531rem;width:8.740rem;height:1.082rem">Раскрытая ладонь: №0</p>
+        <p class="gm-label" style="left:34.338rem;top:33.742rem;width:9.200rem;height:1.082rem">Переход из любого схвата</p>
+        <p class="gm-label" style="left:53.008rem;top:37.531rem;width:8.388rem;height:1.136rem">Нейтральный схват: №1</p>
+        <p class="gm-label" style="left:35.691rem;top:9.633rem;width:6.224rem;height:1.082rem">Сигнал раскрытия</p>
+        <p class="gm-label" style="left:35.691rem;top:4.871rem;width:6.224rem;height:1.082rem">Сигнал закрытия</p>
+        <p class="gm-label" style="left:35.691rem;top:2.706rem;width:6.224rem;height:1.082rem">Триггер</p>
+        <p class="gm-label" style="left:35.772rem;top:0.541rem;width:6.224rem;height:1.082rem">Ожидание</p>
+        <p class="gm-label gm-mid" style="left:50.844rem;top:34.013rem;width:1.624rem;height:0.812rem">Ожидание</p>
+        <p class="gm-label gm-mid" style="left:59.502rem;top:33.878rem;width:4.329rem;height:0.812rem">Сигнал на закрытие</p>
+        <p class="gm-label gm-mid" style="left:30.035rem;top:36.989rem;width:13.827rem;height:1.082rem">Супердлительный сигнал на раскрытие</p>
+        <p class="gm-label" style="left:65.726rem;top:38.342rem;width:8.388rem;height:1.136rem">Силовой схват: №2</p>
+        <p class="gm-label" style="left:73.844rem;top:38.342rem;width:8.388rem;height:1.136rem">Кулачный схват: №3</p>
+        <p class="gm-label" style="left:87.102rem;top:38.342rem;width:8.388rem;height:1.136rem">Боковой схват: №13</p>
+        <p class="gm-label" style="left:95.220rem;top:38.342rem;width:8.388rem;height:1.136rem">Закрытый схват: №14</p>
+        <p class="gm-label gm-mid" style="left:81.285rem;top:34.229rem;width:4.329rem;height:0.812rem">Триггер</p>
+        <p class="gm-label gm-mid" style="left:73.302rem;top:26.436rem;width:4.329rem;height:0.812rem">Триггер</p>
+        <p class="gm-label" style="left:36.313rem;top:21.972rem;width:11.473rem;height:1.136rem">Схват удержания чашки: №4</p>
+        <p class="gm-label" style="left:47.786rem;top:21.972rem;width:8.929rem;height:1.136rem">Удерживающий схват: №5</p>
+        <p class="gm-label" style="left:46.785rem;top:30.820rem;width:6.224rem;height:1.082rem">Сигнал раскрытия</p>
+        <p class="gm-label" style="left:41.968rem;top:47.055rem;width:9.606rem;height:1.136rem">Цилиндрический схват: №6</p>
+        <p class="gm-label gm-mid" style="left:59.827rem;top:22.296rem;width:12.176rem;height:1.136rem">Пользовательский схват 1: №15</p>
+        <p class="gm-label gm-mid" style="left:57.365rem;top:17.507rem;width:4.329rem;height:0.812rem">Триггер</p>
+        <p class="gm-label gm-mid" style="left:68.973rem;top:17.615rem;width:4.329rem;height:0.812rem">Триггер</p>
+        <p class="gm-label" style="left:72.004rem;top:21.106rem;width:12.176rem;height:1.136rem">Пользовательский схват 2: №16</p>
+        <p class="gm-label gm-mid" style="left:50.032rem;top:43.348rem;width:4.329rem;height:0.812rem">Триггер</p>
+        <p class="gm-label" style="left:55.444rem;top:46.704rem;width:8.388rem;height:1.136rem">Трехпалый щепоть: №11</p>
+        <p class="gm-label gm-mid" style="left:62.614rem;top:43.348rem;width:4.329rem;height:0.812rem">Триггер</p>
+        <p class="gm-label" style="left:68.161rem;top:46.704rem;width:8.388rem;height:1.136rem">Двухпалый щепоть: №12</p>
+        <p class="gm-label gm-mid" style="left:57.067rem;top:39.966rem;width:4.329rem;height:0.812rem">Триггер</p>
+        <p class="gm-label" style="left:35.555rem;top:6.981rem;width:10.201rem;height:1.082rem">Длительный сигнал закрытия</p>
+        <p class="gm-label" style="left:35.691rem;top:11.554rem;width:10.824rem;height:1.082rem">Длительный сигнал раскрытия</p>
+        <p class="gm-label" style="left:33.336rem;top:47.786rem;width:9.092rem;height:1.082rem">Плоская ладонь: №7</p>
+        <p class="gm-label gm-mid" style="left:38.099rem;top:37.666rem;width:4.329rem;height:0.812rem">Триггер</p>
+        <p class="gm-label" style="left:22.648rem;top:47.786rem;width:9.092rem;height:1.082rem">Схват для нажатия №8</p>
+        <p class="gm-label gm-mid" style="left:29.142rem;top:45.324rem;width:4.979rem;height:1.082rem">Сигнал закрытия</p>
+        <p class="gm-label gm-mid" style="left:29.142rem;top:41.589rem;width:4.979rem;height:1.082rem">Сигнал раскрытия</p>
+        <p class="gm-label" style="left:12.555rem;top:47.948rem;width:9.092rem;height:1.082rem">Указательный жест: №9</p>
+        <p class="gm-label" style="left:0.758rem;top:47.948rem;width:10.201rem;height:1.082rem">Схват удержания карты №10</p>
+        <p class="gm-label gm-mid" style="left:8.361rem;top:45.486rem;width:4.979rem;height:1.082rem">Сигнал закрытия</p>
+        <p class="gm-label gm-mid" style="left:8.361rem;top:41.752rem;width:4.979rem;height:1.082rem">Сигнал раскрытия</p>
+        <p class="gm-label gm-mid" style="left:19.212rem;top:43.619rem;width:4.329rem;height:0.812rem">Триггер</p>
+    </div></div>
   </div>
   <nav class="tabbar">
-    <div class="tab">
-      <img src="./image/8fc495b48b22a3b24d137e9856ccffec11cafee9.png" alt="">
-      <p>Главная</p>
-    </div>
-    <div class="tab">
-      <img src="./image/dfc33f884f27f504b4883caafb83b0f19bfb17c0.png" alt="">
-      <p>Контакты</p>
-    </div>
-    <div class="tab">
-      <img src="./image/34c780e9c192084ce4ad4061e3a387e41c2f881c.png" alt="">
-      <p>Мониторинг</p>
-    </div>
-    <div class="tab">
-      <img src="./image/6221b9cbaf8f17b28a732e1713ba222e21c4ffe9.png" alt="">
-      <p>Настройки</p>
-    </div>
+    <div class="tab"><img src="./image/8fc495b48b22a3b24d137e9856ccffec11cafee9.png" alt=""><p>Главная</p></div>
+    <div class="tab"><img src="./image/dfc33f884f27f504b4883caafb83b0f19bfb17c0.png" alt=""><p>Контакты</p></div>
+    <div class="tab"><img src="./image/34c780e9c192084ce4ad4061e3a387e41c2f881c.png" alt=""><p>Мониторинг</p></div>
+    <div class="tab"><img src="./image/6221b9cbaf8f17b28a732e1713ba222e21c4ffe9.png" alt=""><p>Настройки</p></div>
   </nav>
   <script src="nav.js?v=74"></script>
 </body>
