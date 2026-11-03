@@ -1847,6 +1847,7 @@
   }
 
   var gripMapWidthRem = 68;
+  var gripMapMoved = false;
 
   function bindGripMapPinch() {
     var scroll = document.getElementById("vega-map-scroll");
@@ -1856,20 +1857,32 @@
     var startDist = 0;
     var startRem = 68;
     var lastRem = 68;
+    var startX = 0;
+    var startY = 0;
     function touchDist(touches) {
       var dx = touches[0].clientX - touches[1].clientX;
       var dy = touches[0].clientY - touches[1].clientY;
       return Math.sqrt(dx * dx + dy * dy);
     }
     scroll.addEventListener("touchstart", function (event) {
-      if (event.touches.length === 2) {
+      gripMapMoved = false;
+      if (event.touches.length === 1) {
+        startX = event.touches[0].clientX;
+        startY = event.touches[0].clientY;
+      } else if (event.touches.length === 2) {
+        gripMapMoved = true;
         startDist = touchDist(event.touches);
         startRem = gripMapWidthRem || 20;
         lastRem = startRem;
       }
     }, { passive: true });
     scroll.addEventListener("touchmove", function (event) {
-      if (event.touches.length === 2 && startDist > 10) {
+      if (event.touches.length === 1) {
+        if (Math.abs(event.touches[0].clientX - startX) > 10 || Math.abs(event.touches[0].clientY - startY) > 10) {
+          gripMapMoved = true;
+        }
+      } else if (event.touches.length === 2 && startDist > 10) {
+        gripMapMoved = true;
         event.preventDefault();
         var ratio = touchDist(event.touches) / startDist;
         lastRem = Math.max(20, Math.min(140, Math.round(startRem * ratio)));
@@ -3248,6 +3261,9 @@
 
   function pressTarget(start) {
     var node = start && start.nodeType === 1 ? start : start && start.parentElement;
+    var mapArea = document.getElementById("vega-map-scroll");
+    if (mapArea && node && mapArea.contains(node)) return null;
+    if (node && node.closest && node.closest(".gm-legend")) return null;
     var pencil = pencilOf(node);
     if (pencil) return pencil;
     var icon = headerIcon(node);
@@ -3333,6 +3349,20 @@
       hideOverlays();
       return;
     }
+
+    var mapScroll = document.getElementById("vega-map-scroll");
+    if (mapScroll && event.target && mapScroll.contains(event.target)) {
+      if (gripMapMoved) return;
+      var circleHit = event.target;
+      while (circleHit && circleHit !== mapScroll && (!circleHit.getAttribute || !circleHit.getAttribute("data-vega-map-circle"))) {
+        circleHit = circleHit.parentElement;
+      }
+      if (circleHit && circleHit !== mapScroll && circleHit.getAttribute("data-vega-map-circle")) {
+        openMapGripPhoto(circleHit.getAttribute("data-vega-map-circle"));
+      }
+      return;
+    }
+    if (event.target && event.target.closest && event.target.closest(".gm-legend")) return;
 
     var label = "";
     var node = event.target;
