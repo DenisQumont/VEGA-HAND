@@ -1849,35 +1849,153 @@
   var gripMapWidthRem = 72;
   var MAP_CIRCLE_GRIPS = [0, 1, 2, 3, 13, 14, 4, 5, 6, 15, 16, 11, 12, 7, 8, 9, 10];
 
+  function fitLegendViewer(box, viewer) {
+    if (!box) return;
+    setTimeout(function () {
+      var svg = box.querySelector("svg");
+      if (!svg) return;
+      try {
+        var g = viewer && viewer.graph ? viewer.graph.getGraphBounds() : svg.getBBox();
+        if (!g || !g.width || !g.height) return;
+        var pad = 16;
+        svg.setAttribute("viewBox", (g.x - pad) + " " + (g.y - pad) + " " + (g.width + pad * 2) + " " + (g.height + pad * 2));
+        svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        svg.style.width = "100%";
+        svg.style.height = "auto";
+        svg.style.minWidth = "0";
+        svg.style.minHeight = "0";
+        svg.style.display = "block";
+        box.style.width = "100%";
+        box.style.height = "auto";
+        box.style.overflow = "visible";
+      } catch (_e) {}
+    }, 30);
+  }
+
   function decorateMapCircles(box) {
     if (!box) return;
     setTimeout(function () {
-      var ellipses = box.querySelectorAll("ellipse");
-      var old = box.querySelectorAll("[data-vega-map-circle]");
+      var svg = box.querySelector("svg");
+      if (!svg) return;
+      var ellipses = svg.querySelectorAll("ellipse");
+      var old = svg.querySelectorAll("[data-vega-map-circle], [data-vega-map-clip]");
       for (var r = 0; r < old.length; r++) old[r].parentNode.removeChild(old[r]);
       if (ellipses.length < MAP_CIRCLE_GRIPS.length) return;
-      var hostRect = box.getBoundingClientRect();
+      var ns = "http://www.w3.org/2000/svg";
+      var defs = svg.querySelector("defs");
+      if (!defs) {
+        defs = document.createElementNS(ns, "defs");
+        svg.insertBefore(defs, svg.firstChild);
+      }
       for (var i = 0; i < MAP_CIRCLE_GRIPS.length; i++) {
         var grip = MAP_CIRCLE_GRIPS[i];
-        var rect = ellipses[i].getBoundingClientRect();
-        var item = document.createElement("div");
-        item.setAttribute("data-vega-map-circle", String(grip));
-        item.style.cssText = "position:absolute;left:" + (rect.left - hostRect.left) + "px;top:" + (rect.top - hostRect.top) + "px;width:" + rect.width + "px;height:" + rect.height + "px;border-radius:50%;overflow:hidden;box-sizing:border-box;border:2px solid #222;background:#f7f7f7;display:flex;align-items:center;justify-content:center;z-index:5;" + (grip < 15 ? "cursor:pointer;" : "");
+        var el = ellipses[i];
+        var cx = parseFloat(el.getAttribute("cx") || "0");
+        var cy = parseFloat(el.getAttribute("cy") || "0");
+        var rx = parseFloat(el.getAttribute("rx") || "0");
+        var ry = parseFloat(el.getAttribute("ry") || "0");
+        var rad = Math.max(4, Math.min(rx, ry) - 3);
+        var clipId = "vega-map-clip-" + i;
+        var clip = document.createElementNS(ns, "clipPath");
+        clip.setAttribute("id", clipId);
+        clip.setAttribute("data-vega-map-clip", "1");
+        var clipCircle = document.createElementNS(ns, "circle");
+        clipCircle.setAttribute("cx", String(cx));
+        clipCircle.setAttribute("cy", String(cy));
+        clipCircle.setAttribute("r", String(rad));
+        clip.appendChild(clipCircle);
+        defs.appendChild(clip);
+
+        var group = document.createElementNS(ns, "g");
+        group.setAttribute("data-vega-map-circle", String(grip));
+        group.setAttribute("clip-path", "url(#" + clipId + ")");
+        if (grip < 15) group.style.cursor = "pointer";
+
+        var bg = document.createElementNS(ns, "circle");
+        bg.setAttribute("cx", String(cx));
+        bg.setAttribute("cy", String(cy));
+        bg.setAttribute("r", String(rad));
+        bg.setAttribute("fill", "#f7f7f7");
+        group.appendChild(bg);
+
         if (grip >= 15) {
-          var q = document.createElement("span");
-          q.textContent = "?";
-          q.style.cssText = "font-family:Roboto-Bold,sans-serif;font-weight:700;color:#222;line-height:1;pointer-events:none;font-size:" + Math.max(12, Math.round(rect.height * 0.56)) + "px;";
-          item.appendChild(q);
+          var txt = document.createElementNS(ns, "text");
+          txt.setAttribute("x", String(cx));
+          txt.setAttribute("y", String(cy));
+          txt.setAttribute("text-anchor", "middle");
+          txt.setAttribute("dominant-baseline", "central");
+          txt.setAttribute("fill", "#222");
+          txt.setAttribute("font-family", "Roboto-Bold, sans-serif");
+          txt.setAttribute("font-weight", "700");
+          txt.setAttribute("font-size", String(Math.round(rad * 1.15)));
+          txt.textContent = "?";
+          group.appendChild(txt);
         } else {
-          var img = document.createElement("img");
-          img.src = "../grip_img/grip" + grip + ".JPG";
-          img.alt = PHONE_GRIPS[grip] || "";
-          img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;";
-          item.appendChild(img);
+          var img = document.createElementNS(ns, "image");
+          img.setAttribute("href", "../grip_img/grip" + grip + ".JPG");
+          img.setAttributeNS("http://www.w3.org/1999/xlink", "href", "../grip_img/grip" + grip + ".JPG");
+          img.setAttribute("x", String(cx - rad));
+          img.setAttribute("y", String(cy - rad));
+          img.setAttribute("width", String(rad * 2));
+          img.setAttribute("height", String(rad * 2));
+          img.setAttribute("preserveAspectRatio", "xMidYMid slice");
+          group.appendChild(img);
         }
-        box.appendChild(item);
+
+        el.parentNode.insertBefore(group, el);
+        el.setAttribute("fill", "none");
+        el.style.pointerEvents = "none";
       }
     }, 30);
+  }
+
+  function bindGripMapPinch() {
+    var scroll = document.getElementById("vega-map-scroll");
+    var canvas = document.getElementById("vega-map-canvas");
+    if (!scroll || !canvas || scroll.dataset.vegaPinch === "1") return;
+    scroll.dataset.vegaPinch = "1";
+    var startDist = 0;
+    var startRem = 72;
+    var lastRem = 72;
+    function touchDist(touches) {
+      var dx = touches[0].clientX - touches[1].clientX;
+      var dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+    scroll.addEventListener("touchstart", function (event) {
+      if (event.touches.length === 2) {
+        startDist = touchDist(event.touches);
+        startRem = gripMapWidthRem || 20;
+        lastRem = startRem;
+      }
+    }, { passive: true });
+    scroll.addEventListener("touchmove", function (event) {
+      if (event.touches.length === 2 && startDist > 10) {
+        event.preventDefault();
+        var ratio = touchDist(event.touches) / startDist;
+        lastRem = Math.max(20, Math.min(140, Math.round(startRem * ratio)));
+        canvas.classList.remove("is-fit");
+        canvas.style.width = lastRem + "rem";
+      }
+    }, { passive: false });
+    scroll.addEventListener("touchend", function (event) {
+      if (startDist > 0 && event.touches.length < 2) {
+        startDist = 0;
+        gripMapWidthRem = lastRem;
+        var box = canvas.querySelector(".mxgraph");
+        if (box && window.GraphViewer) {
+          var data = box.getAttribute("data-mxgraph");
+          box.innerHTML = "";
+          box.style.width = "";
+          box.style.height = "";
+          box.style.position = "relative";
+          box.setAttribute("data-mxgraph", data);
+          try {
+            window.GraphViewer.createViewerForElement(box, function () { decorateMapCircles(box); });
+          } catch (_e) {}
+        }
+      }
+    }, { passive: true });
   }
 
   function renderMxDiagrams() {
@@ -1889,10 +2007,16 @@
         if (nodes[i].dataset.vegaMx === "1") continue;
         nodes[i].dataset.vegaMx = "1";
         nodes[i].style.position = "relative";
-        var isMap = nodes[i].id === "vega-map-mx";
-        try {
-          window.GraphViewer.createViewerForElement(nodes[i], isMap ? function () { decorateMapCircles(nodes[i]); } : null);
-        } catch (_e) {}
+        (function (node) {
+          var isMap = node.id === "vega-map-mx";
+          var isLegend = node.id === "vega-legend-mx";
+          try {
+            window.GraphViewer.createViewerForElement(node, function (viewer) {
+              if (isMap) decorateMapCircles(node);
+              if (isLegend) fitLegendViewer(node, viewer);
+            });
+          } catch (_e) {}
+        })(nodes[i]);
       }
     }
     if (window.GraphViewer) {
@@ -1911,6 +2035,7 @@
 
   function mountGripMap() {
     gripMapWidthRem = 72;
+    bindGripMapPinch();
     renderMxDiagrams();
   }
 
