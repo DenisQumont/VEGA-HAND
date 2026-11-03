@@ -2503,21 +2503,43 @@
     return false;
   }
 
+  function headerShell(node) {
+    var shell = node;
+    while (shell && shell !== document.body) {
+      var shellStyle = shell.getAttribute("style") || "";
+      if (shellStyle.indexOf("width: 3.125rem") !== -1 && shellStyle.indexOf("height: 3.1875rem") !== -1) return shell;
+      shell = shell.parentElement;
+    }
+    return null;
+  }
+
   function hideIconBesideNotification() {
     var nodes = document.querySelectorAll("div");
+    var bell = null;
+    var bleShells = [];
     for (var i = 0; i < nodes.length; i++) {
       var style = nodes[i].getAttribute("style") || "";
-      if (style.indexOf("d4fcacf4ac2660b0476c8408d717a0b3db741651") === -1) continue;
-      var shell = nodes[i];
-      while (shell && shell !== document.body) {
-        var shellStyle = shell.getAttribute("style") || "";
-        if (shellStyle.indexOf("width: 3.125rem") !== -1 && shellStyle.indexOf("height: 3.1875rem") !== -1) {
-          shell.style.display = "none";
-          break;
-        }
-        shell = shell.parentElement;
-      }
+      var isBell = style.indexOf("953999f3aefcce454ce665b5493f1ae4d5842efd") !== -1 || style.indexOf("d4fcacf4ac2660b0476c8408d717a0b3db741651") !== -1;
+      var isBle = style.indexOf("048714f41f6a2ee43d002635a94f596ed8f94b7c") !== -1;
+      if (!isBell && !isBle) continue;
+      var shell = headerShell(nodes[i]);
+      if (!shell) continue;
+      if (isBell) {
+        if (style.indexOf("953999f3aefcce454ce665b5493f1ae4d5842efd") !== -1) bell = shell;
+        shell.style.display = "none";
+      } else bleShells.push(shell);
     }
+    var bellStyle = bell ? (bell.getAttribute("style") || "") : "";
+    var useRight = bellStyle.indexOf("right:") !== -1 && bellStyle.indexOf("left:") === -1;
+    bleShells.forEach(function (shell) {
+      if (useRight) {
+        shell.style.right = "1.25rem";
+        shell.style.left = "auto";
+      } else {
+        shell.style.left = "18.125rem";
+        shell.style.right = "auto";
+      }
+    });
   }
 
   function pinUpButton(button) {
