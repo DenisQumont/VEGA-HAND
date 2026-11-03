@@ -1846,7 +1846,39 @@
     row.dataset.vegaBuilt = "1";
   }
 
-  var gripMapWidthRem = 0;
+  var gripMapWidthRem = 72;
+  var MAP_CIRCLE_GRIPS = [0, 1, 2, 3, 13, 14, 4, 5, 6, 15, 16, 11, 12, 7, 8, 9, 10];
+
+  function decorateMapCircles(box) {
+    if (!box) return;
+    setTimeout(function () {
+      var ellipses = box.querySelectorAll("ellipse");
+      var old = box.querySelectorAll("[data-vega-map-circle]");
+      for (var r = 0; r < old.length; r++) old[r].parentNode.removeChild(old[r]);
+      if (ellipses.length < MAP_CIRCLE_GRIPS.length) return;
+      var hostRect = box.getBoundingClientRect();
+      for (var i = 0; i < MAP_CIRCLE_GRIPS.length; i++) {
+        var grip = MAP_CIRCLE_GRIPS[i];
+        var rect = ellipses[i].getBoundingClientRect();
+        var item = document.createElement("div");
+        item.setAttribute("data-vega-map-circle", String(grip));
+        item.style.cssText = "position:absolute;left:" + (rect.left - hostRect.left) + "px;top:" + (rect.top - hostRect.top) + "px;width:" + rect.width + "px;height:" + rect.height + "px;border-radius:50%;overflow:hidden;box-sizing:border-box;border:2px solid #222;background:#f7f7f7;display:flex;align-items:center;justify-content:center;z-index:5;" + (grip < 15 ? "cursor:pointer;" : "");
+        if (grip >= 15) {
+          var q = document.createElement("span");
+          q.textContent = "?";
+          q.style.cssText = "font-family:Roboto-Bold,sans-serif;font-weight:700;color:#222;line-height:1;pointer-events:none;font-size:" + Math.max(12, Math.round(rect.height * 0.56)) + "px;";
+          item.appendChild(q);
+        } else {
+          var img = document.createElement("img");
+          img.src = "../grip_img/grip" + grip + ".JPG";
+          img.alt = PHONE_GRIPS[grip] || "";
+          img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;";
+          item.appendChild(img);
+        }
+        box.appendChild(item);
+      }
+    }, 30);
+  }
 
   function renderMxDiagrams() {
     var nodes = document.querySelectorAll("#vega-root .mxgraph");
@@ -1856,8 +1888,10 @@
       for (var i = 0; i < nodes.length; i++) {
         if (nodes[i].dataset.vegaMx === "1") continue;
         nodes[i].dataset.vegaMx = "1";
+        nodes[i].style.position = "relative";
+        var isMap = nodes[i].id === "vega-map-mx";
         try {
-          window.GraphViewer.createViewerForElement(nodes[i]);
+          window.GraphViewer.createViewerForElement(nodes[i], isMap ? function () { decorateMapCircles(nodes[i]); } : null);
         } catch (_e) {}
       }
     }
@@ -1876,7 +1910,7 @@
   }
 
   function mountGripMap() {
-    gripMapWidthRem = 0;
+    gripMapWidthRem = 72;
     renderMxDiagrams();
   }
 
@@ -1888,8 +1922,8 @@
       canvas.classList.add("is-fit");
       canvas.style.width = "";
     } else {
-      var base = gripMapWidthRem || 48;
-      gripMapWidthRem = action === "in" ? Math.min(140, base + 22) : Math.max(20, base - 22);
+      var base = gripMapWidthRem || 20;
+      gripMapWidthRem = action === "in" ? Math.min(130, base + 22) : Math.max(20, base - 22);
       if (gripMapWidthRem <= 20) {
         gripMapWidthRem = 0;
         canvas.classList.add("is-fit");
@@ -1905,9 +1939,10 @@
       box.innerHTML = "";
       box.style.width = "";
       box.style.height = "";
+      box.style.position = "relative";
       box.setAttribute("data-mxgraph", data);
       try {
-        window.GraphViewer.createViewerForElement(box);
+        window.GraphViewer.createViewerForElement(box, function () { decorateMapCircles(box); });
       } catch (_e) {}
     }
   }
@@ -1925,14 +1960,12 @@
     return view;
   }
 
-  function openGripPhoto(name) {
-    var preset = gripPresetByName(name);
-    if (!preset) return;
+  function showGripPhotoFile(titleText, file) {
     var view = ensureGripViewer();
-    view.querySelector("[data-vega-grip-view-title]").textContent = preset.name;
+    view.querySelector("[data-vega-grip-view-title]").textContent = titleText;
     var img = view.querySelector("[data-vega-grip-view-photo]");
-    img.alt = preset.name;
-    img.src = "../grip_img/" + preset.photo + ".JPG";
+    img.alt = titleText;
+    img.src = "../grip_img/" + file + ".JPG";
     if (stubDialog) stubDialog.style.display = "none";
     if (valueDialog) valueDialog.style.display = "none";
     sheets.forEach(function (el) { el.style.display = "none"; });
@@ -1943,6 +1976,18 @@
     view.style.display = "block";
     setTabBarsHidden(true);
     lockOverlayScroll();
+  }
+
+  function openGripPhoto(name) {
+    var preset = gripPresetByName(name);
+    if (!preset) return;
+    showGripPhotoFile(preset.name, preset.photo);
+  }
+
+  function openMapGripPhoto(number) {
+    var idx = Number(number);
+    if (isNaN(idx) || idx < 0 || idx > 14) return;
+    showGripPhotoFile((PHONE_GRIPS[idx] || "Схват") + ": №" + idx, "grip" + idx);
   }
 
   function openGripLoad() {
@@ -3452,6 +3497,15 @@
       }
       paintChip(chip, chip.dataset.vegaOff === "1");
       paintAxis();
+      return;
+    }
+
+    var mapCircle = event.target;
+    while (mapCircle && mapCircle !== document.body && (!mapCircle.getAttribute || !mapCircle.getAttribute("data-vega-map-circle"))) {
+      mapCircle = mapCircle.parentElement;
+    }
+    if (mapCircle && mapCircle !== document.body && mapCircle.getAttribute("data-vega-map-circle")) {
+      openMapGripPhoto(mapCircle.getAttribute("data-vega-map-circle"));
       return;
     }
 
