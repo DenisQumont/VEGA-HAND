@@ -18,6 +18,8 @@
     "Мониторинг": "Monitor.html",
     "Настройки": "Setting.html",
     "О системе": "InfoSystem.html",
+    "Сохраненные пинкоды": "SavedPins.html",
+    "Лицензионные соглашения": "License.html",
     "Сервисный режим": "Service.html",
     "Карта схватов": "GripMap.html",
     "Добавить схват": "AddGrip.html",
@@ -32,6 +34,47 @@
 
   function prosthesisConnected() {
     return !!(phoneServer && phoneServer.connected) || !!bleState.connected;
+  }
+
+  function savedPin() {
+    try {
+      var pin = String(localStorage.getItem("vega-pin") || "");
+      return /^\d{4,8}$/.test(pin) ? pin : "";
+    } catch (e) { return ""; }
+  }
+
+  function pinHint() {
+    var pin = savedPin();
+    if (pin) return "Если система спросит PIN, введите " + pin + ".";
+    return "Если система спросит PIN, введите PIN протеза. Заводской PIN — 123456, если его не меняли.";
+  }
+
+  function mountSavedPins() {
+    var input = document.getElementById("vega-pin-input");
+    var status = document.getElementById("vega-pin-status");
+    if (!input) return;
+    var pin = savedPin();
+    input.value = pin;
+    if (status) status.textContent = pin ? "Сохранённый PIN: " + pin : "PIN ещё не сохранён";
+  }
+
+  function saveSavedPin() {
+    var input = document.getElementById("vega-pin-input");
+    if (!input) return;
+    var pin = String(input.value || "").replace(/\D/g, "");
+    if (!/^\d{4,8}$/.test(pin)) {
+      toast("PIN — от 4 до 8 цифр");
+      return;
+    }
+    try { localStorage.setItem("vega-pin", pin); }
+    catch (e) {
+      toast("Браузер не сохранил PIN");
+      return;
+    }
+    input.value = pin;
+    var status = document.getElementById("vega-pin-status");
+    if (status) status.textContent = "Сохранённый PIN: " + pin;
+    toast("PIN сохранён", 1800);
   }
 
   function forgetPhone() {
@@ -478,7 +521,7 @@
     var name = error && error.name || "";
     var message = error && error.message || "";
     if (name === "NetworkError" || name === "NotSupportedError" || name === "NotFoundError") {
-      return "Телефон не смог подключиться. Если появится запрос PIN, введите PIN протеза. Заводской PIN — 123456, если его не меняли.";
+      return "Телефон не смог подключиться. Если появится запрос PIN, введите PIN протеза. " + pinHint();
     }
     return message || name || "Не удалось подключиться к протезу";
   }
@@ -760,7 +803,7 @@
     if (resumeLock) return;
     var name = "протезу";
     try { name = localStorage.getItem("vega-device-name") || name; } catch (e) {}
-    toast("Подключение к " + name + "… Если система спросит PIN, введите PIN протеза.", 0);
+    toast("Подключение к " + name + "… " + pinHint(), 0);
     resumeLock = findPhoneDevice(0).then(function (device) {
       if (!device) throw new Error("Телефон не запомнил выбранный протез. Выберите его ещё раз.");
       return connectWithRetry(device, 4);
@@ -3585,7 +3628,7 @@
       var style = node.getAttribute("style") || "";
       if (style.indexOf("width: 6.125rem") !== -1 && style.indexOf("height: 10.625rem") !== -1) {
         var text = normalize(node.innerText);
-        if (text.indexOf("О приложении") !== -1 || text.indexOf("О программе") !== -1 || text.indexOf("О протезах") !== -1) return node;
+        if (text.indexOf("О приложении") !== -1 || text.indexOf("О программе") !== -1 || text.indexOf("О протезе") !== -1) return node;
       }
       node = node.parentElement;
     }
@@ -3643,7 +3686,8 @@
     "Персонализация": 1,
     "Параметры устройств": 1,
     "Параметры беспроводной связи": 1,
-    "Лицензионные соглашения": 1
+    "Лицензионные соглашения": 1,
+    "Сохраненные пинкоды": 1
   };
 
   function pencilOf(start) {
@@ -3835,7 +3879,7 @@
       return;
     }
     if (event.target && event.target.getAttribute && event.target.getAttribute("data-vega-number")) return;
-    if (event.target && (event.target.tagName === "SELECT" || event.target.tagName === "OPTION")) return;
+    if (event.target && (event.target.tagName === "SELECT" || event.target.tagName === "OPTION" || event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA")) return;
 
     if (isSheetGrabHit(event.target)) {
       hideOverlays();
@@ -3872,6 +3916,10 @@
     }
 
     if (label === "Сохранить") {
+      if (document.getElementById("vega-pin-input")) {
+        saveSavedPin();
+        return;
+      }
       if (editingParam) saveParam();
       else hideOverlays();
       return;
@@ -4106,6 +4154,7 @@
     bindTrigger();
     bindPencils();
     bindSettingsRows();
+    mountSavedPins();
     paintAxis();
     paintMonitorTabBar();
     paintMonitorSensitivity();
