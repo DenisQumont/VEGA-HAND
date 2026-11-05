@@ -13,8 +13,10 @@
     .screen { width: 22.5rem; margin: 0 auto; padding: 0 1.25rem 5.5rem; }
     h1 { font-family: "Roboto-Bold", sans-serif; font-size: 1.375rem; line-height: 1.5rem; margin-top: 0.5rem; }
     .hint { margin-top: 1rem; font-family: "Roboto-Regular", sans-serif; font-size: 0.875rem; line-height: 1.2rem; color: #393939; }
+    .saved-box { margin-top: 1.25rem; padding: 0.875rem 1rem; border: 0.125rem solid #222; border-radius: 0.625rem; background: #fff; }
+    .saved-label { font-family: "Roboto-Regular", sans-serif; font-size: 0.75rem; line-height: 1rem; color: #393939; }
+    .saved-value { margin-top: 0.25rem; font-family: "Roboto-Bold", sans-serif; font-size: 1.5rem; line-height: 1.75rem; letter-spacing: 0.18rem; color: #222; }
     .field { margin-top: 1rem; width: 100%; height: 3rem; border: 0.125rem solid #222; border-radius: 0.625rem; padding: 0 0.875rem; font-family: "Roboto-Medium", sans-serif; font-size: 1.125rem; letter-spacing: 0.12rem; color: #222; background: #fff; }
-    .status { margin-top: 0.75rem; min-height: 1.25rem; font-family: "Roboto-Medium", sans-serif; font-size: 0.875rem; line-height: 1.25rem; color: #222; }
     .save { margin-top: 1.25rem; width: 100%; height: 3rem; border-radius: 0.625rem; background: rgb(55, 90, 118); display: flex; align-items: center; justify-content: center; cursor: pointer; }
     .save p { font-family: "Roboto-Bold", sans-serif; font-size: 1rem; color: #fefefe; }
     .tabbar { position: fixed; z-index: 2; left: 0; right: 0; bottom: 0; width: 22.5rem; height: 4.25rem; margin: 0 auto; background: #fefefe; border-top: 0.0625rem solid #000; display: flex; align-items: center; justify-content: space-around; }
@@ -44,8 +46,11 @@
   <div class="screen">
     <h1>Сохраненные пинкоды</h1>
     <p class="hint">PIN для первичного подключения к протезу. Код хранится в этом браузере и подставляется в подсказку при подключении.</p>
+    <div class="saved-box">
+      <p class="saved-label">Сохранённый PIN</p>
+      <p id="vega-pin-saved" class="saved-value">не сохранён</p>
+    </div>
     <input id="vega-pin-input" class="field" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="123456">
-    <p id="vega-pin-status" class="status"></p>
     <div class="save"><p>Сохранить</p></div>
   </div>
   <nav class="tabbar">
@@ -54,6 +59,6 @@
     <div class="tab"><img src="./image/34c780e9c192084ce4ad4061e3a387e41c2f881c.png" alt=""><p>Мониторинг</p></div>
     <div class="tab on"><img src="./image/6221b9cbaf8f17b28a732e1713ba222e21c4ffe9.png" alt=""><p>Настройки</p></div>
   </nav>
-  <script src="nav.js?v=86"></script>
+  <script src="nav.js?v=87"></script>
 </body>
 </html>

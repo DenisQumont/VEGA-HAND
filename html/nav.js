@@ -49,13 +49,24 @@
     return "Если система спросит PIN, введите PIN протеза. Заводской PIN — 123456, если его не меняли.";
   }
 
-  function mountSavedPins() {
+  function paintSavedPin(pin) {
     var input = document.getElementById("vega-pin-input");
-    var status = document.getElementById("vega-pin-status");
-    if (!input) return;
-    var pin = savedPin();
-    input.value = pin;
-    if (status) status.textContent = pin ? "Сохранённый PIN: " + pin : "PIN ещё не сохранён";
+    var shown = document.getElementById("vega-pin-saved");
+    if (input) {
+      input.value = pin;
+      if (pin) input.setAttribute("value", pin);
+      else input.removeAttribute("value");
+    }
+    if (shown) {
+      shown.textContent = pin || "не сохранён";
+      shown.style.letterSpacing = pin ? "0.18rem" : "0";
+      shown.style.fontSize = pin ? "1.5rem" : "1rem";
+    }
+  }
+
+  function mountSavedPins() {
+    if (!document.getElementById("vega-pin-input") && !document.getElementById("vega-pin-saved")) return;
+    paintSavedPin(savedPin());
   }
 
   function saveSavedPin() {
@@ -71,9 +82,7 @@
       toast("Браузер не сохранил PIN");
       return;
     }
-    input.value = pin;
-    var status = document.getElementById("vega-pin-status");
-    if (status) status.textContent = "Сохранённый PIN: " + pin;
+    paintSavedPin(pin);
     toast("PIN сохранён", 1800);
   }
 
@@ -3970,7 +3979,7 @@
     }
 
     if (label === "Сохранить") {
-      if (document.getElementById("vega-pin-input")) {
+      if (document.getElementById("vega-pin-input") || document.getElementById("vega-pin-saved")) {
         saveSavedPin();
         return;
       }
