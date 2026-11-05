@@ -1357,6 +1357,8 @@
     if (stubDialog) stubDialog.style.display = "none";
     var gripView = document.getElementById("vega-grip-view");
     if (gripView) gripView.style.display = "none";
+    var manualView = document.getElementById("vega-manual-view");
+    if (manualView) manualView.style.display = "none";
     var devices = document.getElementById("vega-devices");
     if (devices) devices.style.display = "none";
     scrim.style.display = "none";
@@ -2008,6 +2010,33 @@
       + '<div data-vega-grip-view-close="1" style="position:absolute;top:max(0.7rem, env(safe-area-inset-top));right:0.75rem;height:2.25rem;padding:0 0.9rem;border-radius:0.625rem;background:rgb(55,90,118);cursor:pointer;display:flex;align-items:center;justify-content:center;"><p style="margin:0;font-size:0.875rem;font-family:Roboto-Bold,sans-serif;font-weight:700;color:#fefefe;pointer-events:none;">Закрыть</p></div>';
     document.body.appendChild(view);
     return view;
+  }
+
+  function ensureManualView() {
+    var view = document.getElementById("vega-manual-view");
+    if (view) return view;
+    view = document.createElement("div");
+    view.id = "vega-manual-view";
+    view.style.cssText = "display:none;position:fixed;inset:0;z-index:80;background:#fefefe;flex-direction:column;";
+    view.innerHTML = '<div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:0.75rem;padding:max(0.7rem, env(safe-area-inset-top)) 0.75rem 0.6rem 1rem;background:#fefefe;border-bottom:0.0625rem solid #ddd;">'
+      + '<p style="margin:0;font-size:1rem;font-family:Roboto-Bold,sans-serif;font-weight:700;color:#222;">О протезе</p>'
+      + '<div data-vega-manual-close="1" style="height:2.25rem;padding:0 0.9rem;border-radius:0.625rem;background:rgb(55,90,118);cursor:pointer;display:flex;align-items:center;"><p style="margin:0;font-size:0.875rem;font-family:Roboto-Bold,sans-serif;font-weight:700;color:#fefefe;pointer-events:none;">Закрыть</p></div>'
+      + '</div>'
+      + '<iframe data-vega-manual-frame title="О протезе" style="flex:1 1 auto;width:100%;border:0;background:#fff;"></iframe>';
+    document.body.appendChild(view);
+    return view;
+  }
+
+  function openProsthesisManual() {
+    var view = ensureManualView();
+    var frame = view.querySelector("[data-vega-manual-frame]");
+    if (frame && !frame.getAttribute("src")) frame.src = "../vega-instruction.pdf";
+    if (stubDialog) stubDialog.style.display = "none";
+    if (valueDialog) valueDialog.style.display = "none";
+    sheets.forEach(function (el) { el.style.display = "none"; });
+    view.style.display = "flex";
+    setTabBarsHidden(true);
+    lockOverlayScroll();
   }
 
   function showGripPhotoFile(titleText, file) {
@@ -3878,6 +3907,18 @@
       hideOverlays();
       return;
     }
+    var manualView = document.getElementById("vega-manual-view");
+    if (manualView && manualView.style.display !== "none" && manualView.contains(event.target)) {
+      var closer = event.target;
+      while (closer && closer !== manualView) {
+        if (closer.getAttribute && closer.getAttribute("data-vega-manual-close") === "1") {
+          hideOverlays();
+          return;
+        }
+        closer = closer.parentElement;
+      }
+      return;
+    }
     if (event.target && event.target.getAttribute && event.target.getAttribute("data-vega-number")) return;
     if (event.target && (event.target.tagName === "SELECT" || event.target.tagName === "OPTION" || event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA")) return;
 
@@ -3992,7 +4033,13 @@
       return;
     }
 
-    if (label === "Добавить документ" || docCard(event.target)) return;
+    var manualCard = docCard(event.target);
+    if (manualCard) {
+      if (normalize(manualCard.innerText).indexOf("О протезе") !== -1) openProsthesisManual();
+      return;
+    }
+
+    if (label === "Добавить документ") return;
 
     var header = headerIconInfo(event.target);
     if (header) {
