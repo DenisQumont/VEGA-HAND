@@ -10,12 +10,13 @@
     @font-face { font-family: "Roboto-Regular"; font-weight: 400; src: url(font/Roboto-Regular_1.ttf) format(truetype); }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { min-height: 100%; background: #fefefe; color: #222; }
-    .screen { width: 22.5rem; margin: 0 auto; padding: 0 1.25rem 1rem; min-height: calc(100svh - 7.5rem - 4.25rem); display: flex; flex-direction: column; }
+    .screen { width: 22.5rem; margin: 0 auto; padding: 0 1.25rem 5.25rem; min-height: calc(100svh - 7.5rem); display: flex; flex-direction: column; }
     h1 { font-family: "Roboto-Bold", sans-serif; font-size: 1.375rem; line-height: 1.7rem; margin-top: 0.5rem; }
     .notice { margin-top: 1rem; }
     .notice p { margin-top: 0.875rem; font-family: "Roboto-Regular", sans-serif; font-size: 0.875rem; line-height: 1.25rem; color: #222; }
     .notice p:first-child { margin-top: 0; }
     .notice a { color: rgb(68, 143, 248); word-break: break-all; }
+    .fw { margin-top: 1.5rem; font-family: "Roboto-Regular", sans-serif; font-size: 0.75rem; line-height: 1.15rem; white-space: pre-wrap; word-break: break-word; color: #222; }
     .copy { margin-top: auto; padding-top: 1.5rem; text-align: center; font-family: "Roboto-Medium", sans-serif; font-size: 0.75rem; line-height: 1rem; color: #393939; }
     .tabbar { position: fixed; z-index: 2; left: 0; right: 0; bottom: 0; width: 22.5rem; height: 4.25rem; margin: 0 auto; background: #fefefe; border-top: 0.0625rem solid #000; display: flex; align-items: center; justify-content: space-around; }
     .tab { width: 3.625rem; height: 3.625rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; }
@@ -48,6 +49,71 @@
       <p>Шрифт Roboto. Начертания Regular, Medium и Bold.<br>Copyright 2011 The Roboto Project Authors (<a href="https://github.com/googlefonts/roboto-classic" target="_blank" rel="noopener">https://github.com/googlefonts/roboto-classic</a>).<br>Шрифт распространяется по лицензии Apache License 2.0. Текст лицензии: <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">https://www.apache.org/licenses/LICENSE-2.0</a></p>
       <p>Яндекс Карты. Фрагмент карты на экране контактов загружается с сайта yandex.ru и не входит в состав программы. Карта показывается на условиях сервиса Яндекс Карты: <a href="https://yandex.ru/legal/maps_termsofuse/" target="_blank" rel="noopener">https://yandex.ru/legal/maps_termsofuse/</a></p>
     </div>
+    <pre class="fw">ЛИЦЕНЗИОННОЕ СОГЛАШЕНИЕ И УВЕДОМЛЕНИЯ О СТОРОННИХ КОМПОНЕНТАХ
+=============================================================
+
+Программное обеспечение прошивки протеза «Vega»
+Copyright (c) 2026 МПО Металлист. Все права защищены.
+
+Настоящее программное обеспечение включает сторонние компоненты с открытым
+исходным кодом, распространяемые на условиях соответствующих лицензий:
+
+------------------------------------------------------------------------------
+1. esp-nimble-cpp (h2zero/esp-nimble-cpp)
+------------------------------------------------------------------------------
+Источник: https://github.com/h2zero/esp-nimble-cpp
+Copyright (c) 2020-2025 Ryan Powell &lt;ryan@nable-embedded.io&gt; and
+esp-nimble-cpp, NimBLE-Arduino contributors.
+Лицензия: Apache License, Version 2.0
+
+Уведомление о модификациях (в соответствии с п. 4(b) Apache License 2.0):
+В оригинальную библиотеку esp-nimble-cpp (файлы src/NimBLEHIDDevice.h и
+src/NimBLEHIDDevice.cpp) внесены следующие изменения:
+- В сервис Device Information Service (UUID 0x180A) класса NimBLEHIDDevice
+  добавлена поддержка характеристик:
+  * Serial Number String (UUID 0x2A25, m_serialNumberChrUuid)
+  * Firmware Revision String (UUID 0x2A26, m_firmwareRevChrUuid)
+  * Hardware Revision String (UUID 0x2A27, m_hardwareRevChrUuid)
+  * Software Revision String (UUID 0x2A28, m_softwareRevChrUuid)
+- Добавлены методы установки значений указанных характеристик:
+  setSerialNumber(), setFirmwareRev(), setHardwareRev(), setSoftwareRev().
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+------------------------------------------------------------------------------
+2. NimBLEOta (h2zero/NimBLEOta)
+------------------------------------------------------------------------------
+Источник: https://github.com/h2zero/NimBLEOta
+Copyright (c) 2025 Ryan Powell
+Лицензия: MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
     <p class="copy">© 2026 МПО «Металлист»</p>
   </div>
   <nav class="tabbar">
