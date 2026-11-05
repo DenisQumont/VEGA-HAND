@@ -67,6 +67,14 @@
   function mountSavedPins() {
     if (!document.getElementById("vega-pin-input") && !document.getElementById("vega-pin-saved")) return;
     paintSavedPin(savedPin());
+    var button = document.querySelector("[data-vega-pin-save]");
+    if (!button || button.dataset.vegaBound) return;
+    button.dataset.vegaBound = "1";
+    button.addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      saveSavedPin();
+    });
   }
 
   function saveSavedPin() {
@@ -350,7 +358,7 @@
       var shell = nodes[i];
       while (shell && shell !== document.body) {
         var style = shell.getAttribute("style") || "";
-        var tab = label === "Мониторинг" && style.indexOf("height: 3.625rem") !== -1;
+        var tab = label === "Мониторинг" && (style.indexOf("height: 3.625rem") !== -1 || (shell.classList && shell.classList.contains("tab")));
         var service = label === "Сервисный режим" && (shell.id === "39_1" || style.indexOf("height: 3.3125rem") !== -1 && style.indexOf("width: 13.3125rem") !== -1);
         if (tab || service || (label === "Сервисный режим" && shell.id === "39_1")) {
           shell.style.opacity = locked ? "0.4" : "";
@@ -3978,11 +3986,16 @@
       return;
     }
 
-    if (label === "Сохранить") {
-      if (document.getElementById("vega-pin-input") || document.getElementById("vega-pin-saved")) {
+    var pinSave = event.target;
+    while (pinSave && pinSave !== document.body) {
+      if (pinSave.getAttribute && pinSave.getAttribute("data-vega-pin-save") === "1") {
         saveSavedPin();
         return;
       }
+      pinSave = pinSave.parentElement;
+    }
+
+    if (label === "Сохранить") {
       if (editingParam) saveParam();
       else hideOverlays();
       return;
