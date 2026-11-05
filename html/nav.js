@@ -2019,7 +2019,7 @@
     view.id = "vega-manual-view";
     view.style.cssText = "display:none;position:fixed;inset:0;z-index:80;background:#fefefe;flex-direction:column;";
     view.innerHTML = '<div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:0.75rem;padding:max(0.7rem, env(safe-area-inset-top)) 0.75rem 0.6rem 1rem;background:#fefefe;border-bottom:0.0625rem solid #ddd;">'
-      + '<p style="margin:0;font-size:1rem;font-family:Roboto-Bold,sans-serif;font-weight:700;color:#222;">О протезе</p>'
+      + '<p data-vega-manual-title style="margin:0;font-size:1rem;font-family:Roboto-Bold,sans-serif;font-weight:700;color:#222;">О протезе</p>'
       + '<div data-vega-manual-close="1" style="height:2.25rem;padding:0 0.9rem;border-radius:0.625rem;background:rgb(55,90,118);cursor:pointer;display:flex;align-items:center;"><p style="margin:0;font-size:0.875rem;font-family:Roboto-Bold,sans-serif;font-weight:700;color:#fefefe;pointer-events:none;">Закрыть</p></div>'
       + '</div>'
       + '<iframe data-vega-manual-frame title="О протезе" style="flex:1 1 auto;width:100%;border:0;background:#fff;"></iframe>';
@@ -2027,16 +2027,29 @@
     return view;
   }
 
-  function openProsthesisManual() {
+  function openManual(title, src) {
     var view = ensureManualView();
+    var heading = view.querySelector("[data-vega-manual-title]");
+    if (heading) heading.textContent = title;
     var frame = view.querySelector("[data-vega-manual-frame]");
-    if (frame && !frame.getAttribute("src")) frame.src = "../vega-instruction.pdf";
+    if (frame) {
+      frame.title = title;
+      if (frame.getAttribute("src") !== src) frame.src = src;
+    }
     if (stubDialog) stubDialog.style.display = "none";
     if (valueDialog) valueDialog.style.display = "none";
     sheets.forEach(function (el) { el.style.display = "none"; });
     view.style.display = "flex";
     setTabBarsHidden(true);
     lockOverlayScroll();
+  }
+
+  function openProsthesisManual() {
+    openManual("О протезе", "../vega-instruction.pdf");
+  }
+
+  function openAppGuide() {
+    openManual("О приложении", "AppGuide.html");
   }
 
   function showGripPhotoFile(titleText, file) {
@@ -4035,7 +4048,9 @@
 
     var manualCard = docCard(event.target);
     if (manualCard) {
-      if (normalize(manualCard.innerText).indexOf("О протезе") !== -1) openProsthesisManual();
+      var manualText = normalize(manualCard.innerText);
+      if (manualText.indexOf("О приложении") !== -1 || manualText.indexOf("О программе") !== -1) openAppGuide();
+      else if (manualText.indexOf("О протезе") !== -1) openProsthesisManual();
       return;
     }
 
