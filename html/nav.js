@@ -2514,7 +2514,7 @@
       lostVega.raf = 0;
     }
     setTabBarsHidden(false);
-    restoreOverlayScroll();
+    unlockOverlayScroll();
   }
 
   function openGripLoad() {
