@@ -255,7 +255,22 @@
     });
   }
 
+  function paintGripMap() {
+    var active = bleState.grip;
+    var nodes = document.querySelectorAll("[data-vega-map-circle]");
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      var on = active != null && String(active) === node.getAttribute("data-vega-map-circle");
+      var rings = node.querySelectorAll("circle");
+      var ring = rings[rings.length - 1];
+      if (!ring) continue;
+      ring.setAttribute("stroke", on ? "#0050ef" : "#000000");
+      ring.setAttribute("stroke-width", on ? "10" : "6");
+    }
+  }
+
   function paintGripInfo() {
+    paintGripMap();
     if (bleState.grip == null) return;
     var gripLabel = bleState.gripName || ("Схват " + bleState.grip);
     var gripName = document.getElementById("34_230_0_1");
@@ -1993,6 +2008,7 @@
   function mountGripMap() {
     gripMapWidthRem = 42;
     bindGripMapPinch();
+    paintGripMap();
   }
 
   function zoomGripMap(action) {
