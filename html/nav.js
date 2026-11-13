@@ -264,8 +264,8 @@
       var rings = node.querySelectorAll("circle");
       var ring = rings[rings.length - 1];
       if (!ring) continue;
-      ring.setAttribute("stroke", on ? "#0050ef" : "#000000");
-      ring.setAttribute("stroke-width", on ? "10" : "6");
+      ring.setAttribute("stroke", on ? "#ff7a00" : "#000000");
+      ring.setAttribute("stroke-width", on ? "16" : "6");
     }
   }
 
