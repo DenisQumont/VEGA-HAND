@@ -12,13 +12,13 @@
     .screen { width: 22.5rem; margin: 0 auto; padding: 1.25rem 1.25rem 5.25rem; }
     .logo { width: 2.75rem; height: 2.75rem; background: url(./image/13b1723ea54643ea7dc01edf27018e703193c347.png) center/cover; }
     h1 { margin-top: 1rem; font-family: "Roboto-Bold", sans-serif; font-size: 1.375rem; line-height: 1.375rem; }
-    .gm-legend { margin-top: 0.75rem; width: 14.5rem; }
+    .gm-legend { margin-top: 0.75rem; width: 100%; }
     .gm-legend-svg { display: block; width: 100%; height: auto; overflow: visible; }
     .gm-tools { margin-top: 0.625rem; display: flex; gap: 0.4rem; }
     .gm-btn { flex: 1; height: 2.15rem; border-radius: 0.5rem; border: 0.09rem solid #222; background: #fefefe; display: flex; align-items: center; justify-content: center; cursor: pointer; }
     .gm-btn p { font-family: "Roboto-Medium", sans-serif; font-size: 0.75rem; font-weight: 500; color: #222; pointer-events: none; }
     .gm-scroll { margin-top: 0.5rem; width: 100%; max-height: 62svh; overflow: auto; border: 0.0625rem solid rgba(34,34,34,0.22); border-radius: 0.75rem; background: #fff; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
-    .gm-canvas { position: relative; width: 68rem; }
+    .gm-canvas { position: relative; width: 42rem; }
     .gm-canvas.is-fit { width: 100% !important; }
     .gm-map-svg { display: block; width: 100%; height: auto; }
     .tabbar { position: fixed; z-index: 4; left: 0; right: 0; bottom: 0; width: 22.5rem; height: 4.25rem; margin: 0 auto; background: #fefefe; border-top: 0.0625rem solid #000; display: flex; align-items: center; justify-content: space-around; }
@@ -33,21 +33,21 @@
     <div class="logo"></div>
     <h1>Карта схватов</h1>
     <div class="gm-legend">
-      <svg class="gm-legend-svg" viewBox="-39.0 -1011.0 453.0 541.0" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-      <path d="M 2.00 -600.00 L 2.00 -610.00 L 206.00 -610.00 L 206.00 -622.00 L 228.00 -605.00 L 206.00 -588.00 L 206.00 -600.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 2.00 -772.00 L 2.00 -782.00 L 206.00 -782.00 L 206.00 -794.00 L 228.00 -777.00 L 206.00 -760.00 L 206.00 -772.00 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 2.00 -852.00 L 2.00 -862.00 L 206.00 -862.00 L 206.00 -874.00 L 228.00 -857.00 L 206.00 -840.00 L 206.00 -852.00 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 5.00 -932.00 L 5.00 -942.00 L 209.00 -942.00 L 209.00 -954.00 L 231.00 -937.00 L 209.00 -920.00 L 209.00 -932.00 Z" fill="#647687" stroke="#314354" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 5.00 -691.00 L 5.00 -701.00 L 49.00 -701.00 L 49.00 -713.00 L 71.00 -696.00 L 49.00 -679.00 L 49.00 -691.00 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 81.00 -519.00 L 81.00 -509.00 L 37.00 -509.00 L 37.00 -497.00 L 15.00 -514.00 L 37.00 -531.00 L 37.00 -519.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4.0" stroke-miterlimit="4"/>
-      <rect x="73.0" y="-726.0" width="10.0" height="60.0" fill="#0050ef" stroke="#001DBC" stroke-width="5.0"/>
-      <rect x="3.0" y="-544.0" width="10.0" height="60.0" fill="#e51400" stroke="#B20000" stroke-width="5.0"/>
-      <text x="2.0" y="-633.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Сигнал раскрытия</text>
-      <text x="2.0" y="-809.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Сигнал закрытия</text>
-      <text x="2.0" y="-889.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
-      <text x="5.0" y="-969.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Ожидание</text>
-      <text x="-3.0" y="-731.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Длительный сигнал закрытия</text>
-      <text x="2.0" y="-562.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Длительный сигнал раскрытия</text>
+      <svg class="gm-legend-svg" viewBox="0 0 605 210" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 6.00 40.50 L 6.00 27.50 L 75.00 27.50 L 75.00 15.50 L 97.00 34.00 L 75.00 52.50 L 75.00 40.50 Z" fill="#647687" stroke="#314354" stroke-width="4.0" stroke-miterlimit="4"/>
+      <text x="110" y="34" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="23" font-weight="700" fill="#000000" pointer-events="none">Пауза</text>
+      <path d="M 262.00 40.50 L 262.00 27.50 L 331.00 27.50 L 331.00 15.50 L 353.00 34.00 L 331.00 52.50 L 331.00 40.50 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
+      <text x="366" y="34" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="23" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
+      <path d="M 6.00 110.50 L 6.00 97.50 L 75.00 97.50 L 75.00 85.50 L 97.00 104.00 L 75.00 122.50 L 75.00 110.50 Z" fill="#0050ef" stroke="#001dbc" stroke-width="4.0" stroke-miterlimit="4"/>
+      <text x="110" y="104" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="23" font-weight="700" fill="#000000" pointer-events="none">Закрытие</text>
+      <path d="M 262.00 110.50 L 262.00 97.50 L 310.00 97.50 L 310.00 85.50 L 332.00 104.00 L 310.00 122.50 L 310.00 110.50 Z" fill="#0050ef" stroke="#001dbc" stroke-width="4.0" stroke-miterlimit="4"/>
+      <rect x="335" y="76" width="10" height="56" fill="#0050ef" stroke="#001dbc" stroke-width="5.0"/>
+      <text x="358" y="104" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="23" font-weight="700" fill="#000000" pointer-events="none">Закрытие до упора</text>
+      <path d="M 6.00 180.50 L 6.00 167.50 L 75.00 167.50 L 75.00 155.50 L 97.00 174.00 L 75.00 192.50 L 75.00 180.50 Z" fill="#e51400" stroke="#b20000" stroke-width="4.0" stroke-miterlimit="4"/>
+      <text x="110" y="174" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="23" font-weight="700" fill="#000000" pointer-events="none">Раскрытие</text>
+      <path d="M 262.00 180.50 L 262.00 167.50 L 310.00 167.50 L 310.00 155.50 L 332.00 174.00 L 310.00 192.50 L 310.00 180.50 Z" fill="#e51400" stroke="#b20000" stroke-width="4.0" stroke-miterlimit="4"/>
+      <rect x="335" y="146" width="10" height="56" fill="#e51400" stroke="#b20000" stroke-width="5.0"/>
+      <text x="358" y="174" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="23" font-weight="700" fill="#000000" pointer-events="none">Раскрытие до упора</text>
       </svg>
     </div>
     <div class="gm-tools">
@@ -57,182 +57,252 @@
     </div>
     <div class="gm-scroll" id="vega-map-scroll">
       <div class="gm-canvas" id="vega-map-canvas">
-        <svg class="gm-map-svg" viewBox="-1315.0 -469.0 3849.0 1288.0" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+        <svg class="gm-map-svg" viewBox="-835.0 -940.0 1430.0 2065.0" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
       <defs>
-      <clipPath id="gm-clip-0"><circle cx="395.0" cy="285.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-1"><circle cx="775.0" cy="285.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-2"><circle cx="1205.0" cy="285.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-3"><circle cx="1545.0" cy="285.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-4"><circle cx="242.0" cy="-330.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-5"><circle cx="582.0" cy="-330.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-6"><circle cx="400.0" cy="637.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-7"><circle cx="35.0" cy="635.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-8"><circle cx="-335.0" cy="635.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-9"><circle cx="-733.0" cy="641.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-10"><circle cx="-1103.0" cy="641.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-11"><circle cx="865.0" cy="624.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-12"><circle cx="1335.0" cy="624.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-13"><circle cx="1995.0" cy="285.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-14"><circle cx="2335.0" cy="285.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-15"><circle cx="1085.0" cy="-322.0" r="82.0"/></clipPath>
-      <clipPath id="gm-clip-16"><circle cx="1522.0" cy="-322.0" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-0"><circle cx="-298.00" cy="-299.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-1"><circle cx="223.75" cy="-301.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-2"><circle cx="227.25" cy="35.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-3"><circle cx="227.25" cy="317.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-4"><circle cx="-513.00" cy="-809.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-5"><circle cx="-173.00" cy="-809.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-6"><circle cx="-294.50" cy="11.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-7"><circle cx="-648.00" cy="-121.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-8"><circle cx="-645.50" cy="167.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-9"><circle cx="-643.00" cy="582.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-10"><circle cx="-639.00" cy="890.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-11"><circle cx="-294.50" cy="371.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-12"><circle cx="-294.50" cy="698.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-13"><circle cx="224.75" cy="712.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-14"><circle cx="227.25" cy="1000.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-15"><circle cx="160.00" cy="-805.00" r="82.0"/></clipPath>
+      <clipPath id="gm-clip-16"><circle cx="469.00" cy="-805.00" r="82.0"/></clipPath>
       </defs>
-      <rect x="1080.0" y="170.0" width="580.0" height="230.0" rx="34" fill="#ffffff" stroke="#000000" stroke-width="4.0"/>
-      <rect x="1870.0" y="170.0" width="580.0" height="230.0" rx="34" fill="#ffffff" stroke="#000000" stroke-width="4.0"/>
-      <rect x="33.0" y="-445.0" width="734.0" height="230.0" rx="34" fill="#ffffff" stroke="#000000" stroke-width="4.0"/>
-      <rect x="-442.0" y="514.0" width="580.0" height="230.0" rx="34" fill="#ffffff" stroke="#000000" stroke-width="5.0"/>
-      <rect x="-1210.0" y="520.0" width="580.0" height="230.0" rx="34" fill="#ffffff" stroke="#000000" stroke-width="5.0"/>
-      <path d="M -201.57 285.00 L -201.57 275.00 L 286.00 275.00 L 286.00 263.00 L 308.00 280.00 L 286.00 297.00 L 286.00 285.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 492.00 289.50 L 492.00 279.50 L 662.57 279.50 L 662.57 267.50 L 684.57 284.50 L 662.57 301.50 L 662.57 289.50 Z" fill="#647687" stroke="#314354" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 862.00 289.50 L 862.00 279.50 L 1056.00 279.50 L 1056.00 267.50 L 1078.00 284.50 L 1056.00 301.50 L 1056.00 289.50 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 1332.00 215.00 L 1332.00 205.00 L 1376.00 205.00 L 1376.00 193.00 L 1398.00 210.00 L 1376.00 227.00 L 1376.00 215.00 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 1408.00 290.00 L 1408.00 300.00 L 1364.00 300.00 L 1364.00 312.00 L 1342.00 295.00 L 1364.00 278.00 L 1364.00 290.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 2122.00 215.00 L 2122.00 205.00 L 2166.00 205.00 L 2166.00 193.00 L 2188.00 210.00 L 2166.00 227.00 L 2166.00 215.00 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 2198.00 290.00 L 2198.00 300.00 L 2154.00 300.00 L 2154.00 312.00 L 2132.00 295.00 L 2154.00 278.00 L 2154.00 290.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 785.00 188.00 L 775.00 188.00 L 775.00 -5.00 L 2205.00 -5.00 L 2205.00 136.00 L 2217.00 136.00 L 2200.00 158.00 L 2183.00 136.00 L 2195.00 136.00 L 2195.00 5.00 L 785.00 5.00 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 1685.50 299.50 L 1685.50 312.00 L 1662.50 294.50 L 1685.50 277.00 L 1685.50 289.50 L 1839.98 289.50 L 1839.98 277.00 L 1862.98 294.50 L 1839.98 312.00 L 1839.98 299.50 Z" fill="#008a00" stroke="#005700" stroke-width="5.0" stroke-miterlimit="4"/>
-      <path d="M 399.50 198.00 L 389.50 198.00 L 389.50 -184.17 L 377.50 -184.17 L 394.50 -206.17 L 411.50 -184.17 L 399.50 -184.17 Z" fill="#e51400" stroke="#B20000" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 369.00 -400.00 L 369.00 -410.00 L 413.00 -410.00 L 413.00 -422.00 L 435.00 -405.00 L 413.00 -388.00 L 413.00 -400.00 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 445.00 -325.00 L 445.00 -315.00 L 401.00 -315.00 L 401.00 -303.00 L 379.00 -320.00 L 401.00 -337.00 L 401.00 -325.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 389.50 410.00 L 399.50 410.00 L 399.50 527.55 L 411.50 527.55 L 394.50 549.55 L 377.50 527.55 L 389.50 527.55 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 487.00 633.00 L 487.00 623.00 L 755.40 623.00 L 755.40 611.00 L 777.40 628.00 L 755.40 645.00 L 755.40 633.00 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 769.00 -325.50 L 769.00 -335.50 L 973.00 -335.50 L 973.00 -347.50 L 995.00 -330.50 L 973.00 -313.50 L 973.00 -325.50 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 1195.50 -317.00 L 1195.50 -304.50 L 1172.50 -322.00 L 1195.50 -339.50 L 1195.50 -327.00 L 1411.50 -327.00 L 1411.50 -339.50 L 1434.50 -322.00 L 1411.50 -304.50 L 1411.50 -317.00 Z" fill="#008a00" stroke="#005700" stroke-width="5.0" stroke-miterlimit="4"/>
-      <path d="M 952.00 633.00 L 952.00 623.00 L 1220.40 623.00 L 1220.40 611.00 L 1242.40 628.00 L 1220.40 645.00 L 1220.40 633.00 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 1340.00 537.00 L 1330.00 537.00 L 1330.00 505.00 L 435.14 505.00 L 435.14 517.00 L 413.14 500.00 L 435.14 483.00 L 435.14 495.00 L 1340.00 495.00 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M 289.91 346.45 L 296.98 353.52 L 167.39 483.11 L 175.87 491.60 L 148.29 495.14 L 151.83 467.56 L 160.32 476.04 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M -55.90 630.00 L -55.90 640.00 L -226.00 640.00 L -226.00 652.00 L -248.00 635.00 L -226.00 618.00 L -226.00 630.00 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M -255.00 582.00 L -255.00 572.00 L -51.00 572.00 L -51.00 560.00 L -29.00 577.00 L -51.00 594.00 L -51.00 582.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M -823.90 636.00 L -823.90 646.00 L -994.00 646.00 L -994.00 658.00 L -1016.00 641.00 L -994.00 624.00 L -994.00 636.00 Z" fill="#0050ef" stroke="#001DBC" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M -1023.00 588.00 L -1023.00 578.00 L -819.00 578.00 L -819.00 566.00 L -797.00 583.00 L -819.00 600.00 L -819.00 588.00 Z" fill="#e51400" stroke="#B20000" stroke-width="4.0" stroke-miterlimit="4"/>
-      <path d="M -604.50 640.00 L -604.50 652.50 L -627.50 635.00 L -604.50 617.50 L -604.50 630.00 L -470.40 630.00 L -470.40 617.50 L -447.40 635.00 L -470.40 652.50 L -470.40 640.00 Z" fill="#008a00" stroke="#005700" stroke-width="5.0" stroke-miterlimit="4"/>
-      <rect x="1400.0" y="180.0" width="10.0" height="60.0" fill="#0050ef" stroke="#001DBC" stroke-width="5.0"/>
-      <rect x="1330.0" y="265.0" width="10.0" height="60.0" fill="#e51400" stroke="#B20000" stroke-width="5.0"/>
-      <rect x="2190.0" y="180.0" width="10.0" height="60.0" fill="#0050ef" stroke="#001DBC" stroke-width="5.0"/>
-      <rect x="2120.0" y="265.0" width="10.0" height="60.0" fill="#e51400" stroke="#B20000" stroke-width="5.0"/>
-      <rect x="437.0" y="-435.0" width="10.0" height="60.0" fill="#0050ef" stroke="#001DBC" stroke-width="5.0"/>
-      <rect x="367.0" y="-350.0" width="10.0" height="60.0" fill="#e51400" stroke="#B20000" stroke-width="5.0"/>
+      <rect x="108.75" y="596.00" width="228.00" height="507.00" rx="34.20" fill="#ffffff" stroke="#000000" stroke-width="5.0"/>
+      <rect x="108.75" y="-72.00" width="231.00" height="490.00" rx="34.65" fill="#ffffff" stroke="#000000" stroke-width="5.0"/>
+      <rect x="-626.00" y="-924.00" width="564.00" height="230.00" rx="34.50" fill="#ffffff" stroke="#000000" stroke-width="4.0"/>
+      <rect x="-759.00" y="466.00" width="228.00" height="534.00" rx="34.20" fill="#ffffff" stroke="#000000" stroke-width="5.0"/>
+      <rect x="-764.00" y="-222.00" width="231.00" height="490.00" rx="34.65" fill="#ffffff" stroke="#000000" stroke-width="5.0"/>
+      <rect x="-814.50" y="705.00" width="120.00" height="60.00" rx="9.00" fill="#ffffff" stroke="#ffffff"/>
+      <rect x="-818.00" y="-5.00" width="104.00" height="60.00" rx="9.00" fill="#ffffff" stroke="#ffffff"/>
+      <rect x="54.75" y="110.00" width="120.00" height="84.00" rx="12.60" fill="#ffffff" stroke="#ffffff"/>
+      <rect x="60.75" y="798.00" width="120.00" height="84.00" rx="12.60" fill="#ffffff" stroke="#ffffff"/>
+      <rect x="-564.00" y="-2.00" width="120.00" height="60.00" rx="9.00" fill="#ffffff" stroke="#ffffff"/>
+      <rect x="-575.00" y="703.00" width="120.00" height="60.00" rx="9.00" fill="#ffffff" stroke="#ffffff"/>
+      <rect x="294.75" y="842.00" width="120.00" height="61.00" rx="9.15" fill="#ffffff" stroke="#ffffff"/>
+      <rect x="301.75" y="160.00" width="120.00" height="61.00" rx="9.15" fill="#ffffff" stroke="#ffffff"/>
+      <path d="M -774.29 -554.32 L -768.18 -565.8 L -387.53 -363.11 L -381.89 -373.7 L -371.17 -347.03 L -399.28 -341.04 L -393.64 -351.63 Z" fill="#e51400" stroke="#b20000" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M -200.97 -293.01 L -201.03 -306.01 L 114.72 -307.39 L 114.67 -319.39 L 136.75 -300.99 L 114.83 -282.39 L 114.78 -294.39 Z" fill="#647687" stroke="#314354" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M 217.26 -213.98 L 230.26 -214.02 L 230.67 -96.02 L 242.67 -96.06 L 224.24 -74 L 205.67 -95.94 L 217.67 -95.98 Z" fill="#0050ef" stroke="#001dbc" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M 310.75 -294.5 L 310.75 -307.5 L 522.5 -307.5 L 522.5 748.5 L 360.98 748.51 L 360.98 760.51 L 338.98 742.02 L 360.98 723.51 L 360.98 735.51 L 509.5 735.5 L 509.5 -294.5 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M -291.52 -386.07 L -304.52 -385.93 L -307.39 -666.48 L -319.39 -666.36 L -301.12 -688.55 L -282.39 -666.74 L -294.39 -666.62 Z" fill="#e51400" stroke="#b20000" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M -386 -877.5 L -386 -890.5 L -342 -890.5 L -342 -902.5 L -320 -884 L -342 -865.5 L -342 -877.5 Z" fill="#0050ef" stroke="#001dbc" stroke-width="4.0" stroke-miterlimit="4"/>
+      <rect x="-318.00" y="-914.00" width="10.00" height="60.00" fill="#0050ef" stroke="#001dbc" stroke-width="5.0"/>
+      <path d="M -310 -805.5 L -310 -792.5 L -354 -792.5 L -354 -780.5 L -376 -799 L -354 -817.5 L -354 -805.5 Z" fill="#e51400" stroke="#b20000" stroke-width="4.0" stroke-miterlimit="4"/>
+      <rect x="-388.00" y="-829.00" width="10.00" height="60.00" fill="#e51400" stroke="#b20000" stroke-width="5.0"/>
+      <path d="M -301 -215.55 L -288 -215.55 L -288 -98 L -276 -98 L -294.5 -76 L -313 -98 L -301 -98 Z" fill="#0050ef" stroke="#001dbc" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M -301 98 L -288 98 L -288 262 L -276 262 L -294.5 284 L -313 262 L -301 262 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M 270.5 -798 L 270.5 -785.5 L 247.5 -805 L 270.5 -824.5 L 270.5 -812 L 358.5 -812 L 358.5 -824.5 L 381.5 -805 L 358.5 -785.5 L 358.5 -798 Z" fill="#008a00" stroke="#005700" stroke-width="5.0" stroke-miterlimit="4"/>
+      <path d="M -301 458 L -288 458 L -288 589 L -276 589 L -294.5 611 L -313 589 L -301 589 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M -207.44 704.48 L -207.56 691.48 L -5.5 689.56 L -5.5 -116.5 L -268 -116.5 L -268 -104.5 L -290 -123 L -268 -141.5 L -268 -129.5 L 7.5 -129.5 L 7.5 702.44 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M -385 -305.5 L -385 -292.5 L -641.54 -292.5 L -641.84 -245.96 L -629.84 -245.88 L -648.49 -224 L -666.84 -246.12 L -654.84 -246.04 L -654.46 -305.5 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M -686.11 630 L -673.11 630 L -673.2 788 L -661.2 788.01 L -679.71 810 L -698.2 787.99 L -686.2 788 Z" fill="#0050ef" stroke="#001dbc" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M -603.5 803 L -616.5 803 L -616.5 684 L -628.5 684 L -610 662 L -591.5 684 L -603.5 684 Z" fill="#e51400" stroke="#b20000" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M -636 436.5 L -623.5 436.5 L -643 459.5 L -662.5 436.5 L -650 436.5 L -650 305.5 L -662.5 305.5 L -643 282.5 L -623.5 305.5 L -636 305.5 Z" fill="#008a00" stroke="#005700" stroke-width="5.0" stroke-miterlimit="4"/>
+      <path d="M -702.4 -39.01 L -689.4 -38.99 L -689.48 62.01 L -677.48 62.01 L -696 84 L -714.48 61.99 L -702.48 61.99 Z" fill="#0050ef" stroke="#001dbc" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M -591.45 89.01 L -604.45 88.99 L -604.24 -21.01 L -616.24 -21.03 L -597.7 -43 L -579.24 -20.97 L -591.24 -20.99 Z" fill="#e51400" stroke="#b20000" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M 236.75 571.5 L 249.25 571.5 L 229.75 594.5 L 210.25 571.5 L 222.75 571.5 L 222.75 455.5 L 210.25 455.5 L 229.75 432.5 L 249.25 455.5 L 236.75 455.5 Z" fill="#008a00" stroke="#005700" stroke-width="5.0" stroke-miterlimit="4"/>
+      <path d="M 185.35 126.99 L 198.35 127.01 L 198.27 197.01 L 210.27 197.02 L 191.75 219 L 173.28 196.98 L 185.28 196.99 Z" fill="#0050ef" stroke="#001dbc" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M 273.25 228 L 260.25 228 L 260.25 158 L 248.25 158 L 266.75 136 L 285.25 158 L 273.25 158 Z" fill="#e51400" stroke="#b20000" stroke-width="4.0" stroke-miterlimit="4"/>
+      <rect x="244.75" y="124.00" width="43.00" height="10.00" fill="#e51400" stroke="#b20000" stroke-width="5.0"/>
+      <rect x="170.75" y="219.00" width="42.00" height="10.00" fill="#0050ef" stroke="#001dbc" stroke-width="5.0"/>
+      <path d="M -58.02 -798.99 L -57.98 -811.99 L 51.02 -811.59 L 51.07 -823.59 L 73 -805.01 L 50.93 -786.59 L 50.98 -798.59 Z" fill="#008a00" stroke="#005700" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M 180.85 804.99 L 193.85 805.01 L 193.77 875.01 L 205.77 875.02 L 187.25 897 L 168.78 874.98 L 180.78 874.99 Z" fill="#0050ef" stroke="#001dbc" stroke-width="4.0" stroke-miterlimit="4"/>
+      <path d="M 268.75 906 L 255.75 906 L 255.75 836 L 243.75 836 L 262.25 814 L 280.75 836 L 268.75 836 Z" fill="#e51400" stroke="#b20000" stroke-width="4.0" stroke-miterlimit="4"/>
+      <rect x="240.25" y="802.00" width="43.00" height="10.00" fill="#e51400" stroke="#b20000" stroke-width="5.0"/>
+      <rect x="166.25" y="897.00" width="42.00" height="10.00" fill="#0050ef" stroke="#001dbc" stroke-width="5.0"/>
       <g data-vega-map-circle="0" style="cursor:pointer">
-      <circle cx="395.0" cy="285.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip0.jpg" x="313.0" y="203.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-0)"/>
-      <circle cx="395.0" cy="285.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      <circle cx="-298.00" cy="-299.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip0.jpg" x="-380.00" y="-381.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-0)"/>
+      <circle cx="-298.00" cy="-299.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
       </g>
       <g data-vega-map-circle="1" style="cursor:pointer">
-      <circle cx="775.0" cy="285.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip1.jpg" x="693.0" y="203.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-1)"/>
-      <circle cx="775.0" cy="285.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      <circle cx="223.75" cy="-301.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip1.jpg" x="141.75" y="-383.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-1)"/>
+      <circle cx="223.75" cy="-301.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
       </g>
       <g data-vega-map-circle="2" style="cursor:pointer">
-      <circle cx="1205.0" cy="285.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip2.jpg" x="1123.0" y="203.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-2)"/>
-      <circle cx="1205.0" cy="285.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      <circle cx="227.25" cy="35.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip2.jpg" x="145.25" y="-47.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-2)"/>
+      <circle cx="227.25" cy="35.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
       </g>
       <g data-vega-map-circle="3" style="cursor:pointer">
-      <circle cx="1545.0" cy="285.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip3.jpg" x="1463.0" y="203.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-3)"/>
-      <circle cx="1545.0" cy="285.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
-      </g>
-      <g data-vega-map-circle="13" style="cursor:pointer">
-      <circle cx="1995.0" cy="285.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip13.jpg" x="1913.0" y="203.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-13)"/>
-      <circle cx="1995.0" cy="285.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
-      </g>
-      <g data-vega-map-circle="14" style="cursor:pointer">
-      <circle cx="2335.0" cy="285.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip14.jpg" x="2253.0" y="203.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-14)"/>
-      <circle cx="2335.0" cy="285.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      <circle cx="227.25" cy="317.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip3.jpg" x="145.25" y="235.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-3)"/>
+      <circle cx="227.25" cy="317.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
       </g>
       <g data-vega-map-circle="4" style="cursor:pointer">
-      <circle cx="242.0" cy="-330.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip4.jpg" x="160.0" y="-412.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-4)"/>
-      <circle cx="242.0" cy="-330.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      <circle cx="-513.00" cy="-809.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip4.jpg" x="-595.00" y="-891.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-4)"/>
+      <circle cx="-513.00" cy="-809.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
       </g>
       <g data-vega-map-circle="5" style="cursor:pointer">
-      <circle cx="582.0" cy="-330.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip5.jpg" x="500.0" y="-412.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-5)"/>
-      <circle cx="582.0" cy="-330.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      <circle cx="-173.00" cy="-809.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip5.jpg" x="-255.00" y="-891.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-5)"/>
+      <circle cx="-173.00" cy="-809.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
       </g>
       <g data-vega-map-circle="6" style="cursor:pointer">
-      <circle cx="400.0" cy="637.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip6.jpg" x="318.0" y="555.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-6)"/>
-      <circle cx="400.0" cy="637.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
-      </g>
-      <g data-vega-map-circle="15">
-      <circle cx="1085.0" cy="-322.0" r="82.0" fill="#f7f7f7"/>
-      <text x="1085.0" y="-322.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="96" font-weight="700" fill="#222222">?</text>
-      <circle cx="1085.0" cy="-322.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
-      </g>
-      <g data-vega-map-circle="16">
-      <circle cx="1522.0" cy="-322.0" r="82.0" fill="#f7f7f7"/>
-      <text x="1522.0" y="-322.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="96" font-weight="700" fill="#222222">?</text>
-      <circle cx="1522.0" cy="-322.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
-      </g>
-      <g data-vega-map-circle="11" style="cursor:pointer">
-      <circle cx="865.0" cy="624.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip11.jpg" x="783.0" y="542.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-11)"/>
-      <circle cx="865.0" cy="624.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
-      </g>
-      <g data-vega-map-circle="12" style="cursor:pointer">
-      <circle cx="1335.0" cy="624.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip12.jpg" x="1253.0" y="542.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-12)"/>
-      <circle cx="1335.0" cy="624.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      <circle cx="-294.50" cy="11.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip6.jpg" x="-376.50" y="-71.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-6)"/>
+      <circle cx="-294.50" cy="11.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
       </g>
       <g data-vega-map-circle="7" style="cursor:pointer">
-      <circle cx="35.0" cy="635.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip7.jpg" x="-47.0" y="553.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-7)"/>
-      <circle cx="35.0" cy="635.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      <circle cx="-648.00" cy="-121.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip7.jpg" x="-730.00" y="-203.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-7)"/>
+      <circle cx="-648.00" cy="-121.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
       </g>
       <g data-vega-map-circle="8" style="cursor:pointer">
-      <circle cx="-335.0" cy="635.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip8.jpg" x="-417.0" y="553.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-8)"/>
-      <circle cx="-335.0" cy="635.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      <circle cx="-645.50" cy="167.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip8.jpg" x="-727.50" y="85.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-8)"/>
+      <circle cx="-645.50" cy="167.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
       </g>
       <g data-vega-map-circle="9" style="cursor:pointer">
-      <circle cx="-733.0" cy="641.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip9.jpg" x="-815.0" y="559.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-9)"/>
-      <circle cx="-733.0" cy="641.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      <circle cx="-643.00" cy="582.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip9.jpg" x="-725.00" y="500.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-9)"/>
+      <circle cx="-643.00" cy="582.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
       </g>
       <g data-vega-map-circle="10" style="cursor:pointer">
-      <circle cx="-1103.0" cy="641.0" r="82.0" fill="#f7f7f7"/>
-      <image href="../grip_img/map_grip10.jpg" x="-1185.0" y="559.0" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-10)"/>
-      <circle cx="-1103.0" cy="641.0" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      <circle cx="-639.00" cy="890.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip10.jpg" x="-721.00" y="808.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-10)"/>
+      <circle cx="-639.00" cy="890.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
       </g>
-      <text x="285.0" y="398.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Раскрытая ладонь: №0</text>
-      <text x="-48.0" y="258.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Переход из любого схвата</text>
-      <text x="642.0" y="398.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Нейтральный схват: №1</text>
-      <text x="590.0" y="255.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Ожидание</text>
-      <text x="960.0" y="250.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Сигнал на закрытие</text>
-      <text x="-207.0" y="328.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Супердлительный сигнал на раскрытие</text>
-      <text x="1112.0" y="428.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Силовой схват: №2</text>
-      <text x="1412.0" y="428.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Кулачный схват: №3</text>
-      <text x="1902.0" y="428.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Боковой схват: №13</text>
-      <text x="2202.0" y="428.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Закрытый схват: №14</text>
-      <text x="1765.0" y="263.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
-      <text x="1470.0" y="-25.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
-      <text x="25.0" y="-177.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Схват удержания чашки: №4</text>
-      <text x="449.0" y="-177.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Удерживающий схват: №5</text>
-      <text x="412.0" y="150.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Сигнал раскрытия</text>
-      <text x="234.0" y="750.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Цилиндрический схват: №6</text>
-      <text x="894.0" y="-217.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Пользовательский схват 1: №15</text>
-      <text x="881.0" y="-355.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
-      <text x="1310.0" y="-351.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
-      <text x="1344.0" y="-209.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Пользовательский схват 2: №16</text>
-      <text x="610.0" y="600.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
-      <text x="732.0" y="737.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Трехпалый щепоть: №11</text>
-      <text x="1075.0" y="600.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
-      <text x="1202.0" y="737.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Двухпалый щепоть: №12</text>
-      <text x="870.0" y="475.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
-      <text x="-85.0" y="777.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Плоская ладонь: №7</text>
-      <text x="169.0" y="390.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
-      <text x="-480.0" y="777.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Схват для нажатия №8</text>
-      <text x="-254.0" y="686.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Сигнал закрытия</text>
-      <text x="-265.0" y="548.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Сигнал раскрытия</text>
-      <text x="-853.0" y="783.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Указательный жест: №9</text>
-      <text x="-1289.0" y="783.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Схват удержания карты №10</text>
-      <text x="-1022.0" y="692.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Сигнал закрытия</text>
-      <text x="-1033.0" y="554.0" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Сигнал раскрытия</text>
-      <text x="-529.0" y="610.0" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
-      </svg>
+      <g data-vega-map-circle="11" style="cursor:pointer">
+      <circle cx="-294.50" cy="371.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip11.jpg" x="-376.50" y="289.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-11)"/>
+      <circle cx="-294.50" cy="371.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      </g>
+      <g data-vega-map-circle="12" style="cursor:pointer">
+      <circle cx="-294.50" cy="698.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip12.jpg" x="-376.50" y="616.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-12)"/>
+      <circle cx="-294.50" cy="698.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      </g>
+      <g data-vega-map-circle="13" style="cursor:pointer">
+      <circle cx="224.75" cy="712.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip13.jpg" x="142.75" y="630.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-13)"/>
+      <circle cx="224.75" cy="712.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      </g>
+      <g data-vega-map-circle="14" style="cursor:pointer">
+      <circle cx="227.25" cy="1000.00" r="82.0" fill="#f7f7f7"/>
+      <image href="../grip_img/map_grip14.jpg" x="145.25" y="918.00" width="164.0" height="164.0" preserveAspectRatio="xMidYMid slice" clip-path="url(#gm-clip-14)"/>
+      <circle cx="227.25" cy="1000.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      </g>
+      <g data-vega-map-circle="15">
+      <circle cx="160.00" cy="-805.00" r="82.0" fill="#f7f7f7"/>
+      <text x="160.00" y="-805.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="96" font-weight="700" fill="#222222">?</text>
+      <circle cx="160.00" cy="-805.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      </g>
+      <g data-vega-map-circle="16">
+      <circle cx="469.00" cy="-805.00" r="82.0" fill="#f7f7f7"/>
+      <text x="469.00" y="-805.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="96" font-weight="700" fill="#222222">?</text>
+      <circle cx="469.00" cy="-805.00" r="85.0" fill="none" stroke="#000000" stroke-width="6"/>
+      </g>
+      <circle cx="-358.00" cy="-394.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="-358.00" y="-394.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">0</text>
+      <circle cx="142.75" cy="-376.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="142.75" y="-376.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">1</text>
+      <circle cx="139.75" cy="-37.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="139.75" y="-37.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">2</text>
+      <circle cx="139.75" cy="252.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="139.75" y="252.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">3</text>
+      <circle cx="-589.00" cy="-892.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="-589.00" y="-892.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">4</text>
+      <circle cx="-249.00" cy="-892.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="-249.00" y="-892.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">5</text>
+      <circle cx="-373.50" cy="-69.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="-373.50" y="-69.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">6</text>
+      <circle cx="-734.00" cy="-192.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="-734.00" y="-192.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">7</text>
+      <circle cx="-734.00" cy="105.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="-734.00" y="105.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">8</text>
+      <circle cx="-719.00" cy="504.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="-719.00" y="504.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">9</text>
+      <circle cx="-721.00" cy="819.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="-721.00" y="819.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">10</text>
+      <circle cx="-371.25" cy="291.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="-371.25" y="291.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">11</text>
+      <circle cx="-371.25" cy="617.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="-371.25" y="617.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">12</text>
+      <circle cx="147.75" cy="634.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="147.75" y="634.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">13</text>
+      <circle cx="144.25" cy="928.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="144.25" y="928.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">14</text>
+      <circle cx="89.00" cy="-890.50" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="89.00" y="-890.50" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">15</text>
+      <circle cx="398.00" cy="-889.00" r="25.0" fill="#ffffff" stroke="#000000" stroke-width="1.5" pointer-events="none"/>
+      <text x="398.00" y="-889.00" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">16</text>
+      <text x="-256.00" y="-391.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Раскрытая</text>
+      <text x="-229.12" y="-362.20" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">ладонь</text>
+      <text x="-799.00" y="-575.00" font-family="Roboto-Bold, sans-serif" font-size="31" font-weight="700" fill="#000000" pointer-events="none">Из любого схвата</text>
+      <text x="265.00" y="-386.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Нейтральный</text>
+      <text x="291.88" y="-357.20" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">схват</text>
+      <text x="-18.00" y="-327.39" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Пауза</text>
+      <text x="288.00" y="-154.39" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Закрытие</text>
+      <text x="-692.00" y="-533.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Очень</text>
+      <text x="-624.80" y="-504.20" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">длительное</text>
+      <text x="-571.04" y="-475.41" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">раскрытие</text>
+      <text x="432.00" y="-331.39" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
+      <text x="-567.00" y="-664.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Удержание</text>
+      <text x="-567.00" y="-635.20" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">чашки</text>
+      <text x="-252.00" y="-659.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Удерживающий</text>
+      <text x="-252.00" y="-630.20" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">схват</text>
+      <text x="-283.00" y="-515.50" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Раскрытие</text>
+      <text x="72.00" y="-682.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Настраиваемый</text>
+      <text x="72.00" y="-653.20" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">схват 1</text>
+      <text x="0.99" y="-832.39" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
+      <text x="315.00" y="-832.39" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
+      <text x="385.00" y="-679.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Настраиваемый</text>
+      <text x="385.00" y="-650.20" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">схват 2</text>
+      <text x="-240.00" y="521.61" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
+      <text x="-235.00" y="297.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Трехпалая</text>
+      <text x="-208.12" y="325.80" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">щепоть</text>
+      <text x="-243.00" y="186.61" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
+      <text x="-320.00" y="810.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Двухпалая</text>
+      <text x="-320.00" y="838.80" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">щепоть</text>
+      <text x="-116.00" y="658.61" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
+      <text x="-696.00" y="370.61" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
+      <text x="-522.00" y="520.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Указательный</text>
+      <text x="-522.00" y="548.80" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">жест</text>
+      <text x="-520.00" y="829.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Удержание</text>
+      <text x="-520.00" y="857.80" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">карты</text>
+      <text x="-527.00" y="-327.39" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
+      <text x="-527.00" y="124.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Схват для</text>
+      <text x="-527.00" y="152.80" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">нажатия</text>
+      <text x="-527.00" y="-175.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Плоская</text>
+      <text x="-527.00" y="-146.20" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">ладонь</text>
+      <text x="-230.00" y="-53.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Цилиндрический</text>
+      <text x="-209.84" y="-24.20" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">схват</text>
+      <text x="173.00" y="509.61" text-anchor="middle" dominant-baseline="central" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Триггер</text>
+      <text x="345.00" y="951.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Схват</text>
+      <text x="345.00" y="979.80" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">закрытый</text>
+      <text x="345.00" y="-38.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Силовой</text>
+      <text x="345.00" y="-9.20" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">схват</text>
+      <text x="348.00" y="268.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Кулачный</text>
+      <text x="348.00" y="296.80" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">схват</text>
+      <text x="343.00" y="631.00" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">Боковой</text>
+      <text x="343.00" y="659.80" font-family="Roboto-Bold, sans-serif" font-size="24" font-weight="700" fill="#000000" pointer-events="none">схват</text>
+      <text x="-799.00" y="738.50" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Закрытие</text>
+      <text x="-806.00" y="29.50" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Закрытие</text>
+      <text x="75.00" y="140.50" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Закрытие</text>
+      <text x="75.00" y="169.30" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">до упора</text>
+      <text x="75.00" y="825.50" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Закрытие</text>
+      <text x="75.00" y="854.30" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">до упора</text>
+      <text x="-576.00" y="33.50" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Раскрытие</text>
+      <text x="-587.00" y="738.50" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Раскрытие</text>
+      <text x="283.00" y="862.50" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Раскрытие</text>
+      <text x="283.00" y="891.30" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">до упора</text>
+      <text x="290.00" y="180.50" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Раскрытие</text>
+      <text x="290.00" y="209.30" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">до упора</text>
+      <text x="-285.00" y="-172.50" font-family="Roboto-Bold, sans-serif" font-size="19" font-weight="700" fill="#000000" pointer-events="none">Закрытие</text>
+        </svg>
       </div>
     </div>
   </div>
@@ -242,6 +312,6 @@
     <div class="tab"><img src="./image/34c780e9c192084ce4ad4061e3a387e41c2f881c.png" alt=""><p>Мониторинг</p></div>
     <div class="tab"><img src="./image/6221b9cbaf8f17b28a732e1713ba222e21c4ffe9.png" alt=""><p>Настройки</p></div>
   </nav>
-  <script src="nav.js?v=90"></script>
+  <script src="nav.js?v=83"></script>
 </body>
 </html>
