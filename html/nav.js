@@ -1846,7 +1846,7 @@
     row.dataset.vegaBuilt = "1";
   }
 
-  var gripMapWidthRem = 68;
+  var gripMapWidthRem = 42;
   var gripMapMoved = false;
 
   function bindGripMapPinch() {
@@ -1855,8 +1855,8 @@
     if (!scroll || !canvas || scroll.dataset.vegaPinch === "1") return;
     scroll.dataset.vegaPinch = "1";
     var startDist = 0;
-    var startRem = 68;
-    var lastRem = 68;
+    var startRem = 42;
+    var lastRem = 42;
     var startX = 0;
     var startY = 0;
     function touchDist(touches) {
@@ -1904,7 +1904,7 @@
   }
 
   function mountGripMap() {
-    gripMapWidthRem = 68;
+    gripMapWidthRem = 42;
     bindGripMapPinch();
   }
 
@@ -1917,7 +1917,7 @@
       canvas.style.width = "";
     } else {
       var base = gripMapWidthRem || 20;
-      gripMapWidthRem = action === "in" ? Math.min(140, base + 22) : Math.max(20, base - 22);
+      gripMapWidthRem = action === "in" ? Math.min(140, base + 16) : Math.max(20, base - 16);
       if (gripMapWidthRem <= 20) {
         gripMapWidthRem = 0;
         canvas.classList.add("is-fit");
