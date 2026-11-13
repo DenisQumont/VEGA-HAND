@@ -404,9 +404,12 @@
     };
   }
 
-  function adcToMyoVolt(adc) {
+  function adcToMyoVolt(adc, k_sensetive) {
     if (adc == null || isNaN(adc)) return null;
-    return adc * 3.3 * 7.1 / (4.7 * 4095);
+    if (k_sensetive == null || isNaN(k_sensetive)) k_sensetive = 1;
+    var volts = adc * 3.3 * 7.1 / (4.7 * 4095) * k_sensetive;
+    if (volts > 5) volts = 5;
+    return volts;
   }
 
   function adcToCellVolt(adc) {
@@ -2183,8 +2186,8 @@
     var dt = Math.min(0.05, Math.max(0.001, (ts - lostVega.lastTs) / 1000));
     lostVega.lastTs = ts;
 
-    var m1 = adcToMyoVolt(bleState.myo1) || 0;
-    var m2 = adcToMyoVolt(bleState.myo2) || 0;
+    var m1 = adcToMyoVolt(bleState.myo1, bleState.k1) || 0;
+    var m2 = adcToMyoVolt(bleState.myo2, bleState.k2) || 0;
     var m1Val = lostVega.view.querySelector("[data-lv-m1-val]");
     var m2Val = lostVega.view.querySelector("[data-lv-m2-val]");
     var m1Bar = lostVega.view.querySelector("[data-lv-m1-bar]");
@@ -3290,8 +3293,8 @@
     var vbat = packet && packet.vbat != null ? packet.vbat : bleState.vbat;
     chartSamples.push({
       t: now,
-      myo1: adcToMyoVolt(myo1),
-      myo2: adcToMyoVolt(myo2),
+      myo1: adcToMyoVolt(myo1, bleState.k1),
+      myo2: adcToMyoVolt(myo2, bleState.k2),
       battery: adcToCellVolt(vbat)
     });
     var keep = chartWindowSec * 1000 + 800;
@@ -3382,8 +3385,8 @@
     var myo1 = document.getElementById("34_775");
     var myo2 = document.getElementById("34_776");
     var akb = document.getElementById("34_777");
-    var myo1V = adcToMyoVolt(bleState.myo1);
-    var myo2V = adcToMyoVolt(bleState.myo2);
+    var myo1V = adcToMyoVolt(bleState.myo1, bleState.k1);
+    var myo2V = adcToMyoVolt(bleState.myo2, bleState.k2);
     var cellV = adcToCellVolt(bleState.vbat);
     if (myo1 && myo1V != null) myo1.textContent = "MYO-1: " + myo1V.toFixed(1) + " В";
     if (myo2 && myo2V != null) myo2.textContent = "MYO-2: " + myo2V.toFixed(1) + " В";
